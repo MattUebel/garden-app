@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Garden Statistics{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>Overall Statistics</h3>
+                <div id="overall-stats" class="row">
+                    <!-- Overall stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h3>Plants by Season</h3>
+                <div id="season-chart"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h3>Plants by Status</h3>
+                <div id="status-chart"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-12 mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>Garden Beds</h3>
+                <div id="garden-beds-stats" class="row">
+                    <!-- Garden bed stats will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadOverallStats();
+    loadSeasonChart();
+    loadGardenBedStats();
+});
+
+function loadOverallStats() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(stats => {
+            const container = document.getElementById('overall-stats');
+            container.innerHTML = `
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h4>Total Plants</h4>
+                            <h2 class="text-success">${stats.total_plants}</h2>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Create status chart
+            const statusData = {
+                values: Object.values(stats.plants_by_status),
+                labels: Object.keys(stats.plants_by_status),
+                type: 'pie',
+                name: 'Plant Status'
+            };
+            
+            Plotly.newPlot('status-chart', [statusData], {
+                height: 400,
+                showlegend: true
+            });
+        });
+}
+
+function loadSeasonChart() {
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(stats => {
+            const data = {
+                x: Object.keys(stats.plants_by_season),
+                y: Object.values(stats.plants_by_season),
+                type: 'bar',
+                marker: {
+                    color: '#198754'
+                }
+            };
+            
+            Plotly.newPlot('season-chart', [data], {
+                height: 400,
+                showlegend: false,
+                xaxis: {
+                    title: 'Season'
+                },
+                yaxis: {
+                    title: 'Number of Plants'
+                }
+            });
+        });
+}
+
+function loadGardenBedStats() {
+    fetch('/api/garden/beds')
+        .then(response => response.json())
+        .then(beds => {
+            const promises = beds.map(bed => 
+                fetch(`/api/stats/beds/${bed.id}`).then(r => r.json())
+            );
+            
+            Promise.all(promises).then(bedStats => {
+                const container = document.getElementById('garden-beds-stats');
+                container.innerHTML = bedStats.map(stats => `
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">${stats.bed_name}</h5>
+                                <p><strong>Space:</strong> ${stats.space_utilization}</p>
+                                <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
+                                <div class="small">
+                                    <strong>Status Breakdown:</strong><br>
+                                    ${Object.entries(stats.plants_by_status)
+                                        .filter(([_, count]) => count > 0)
+                                        .map(([status, count]) => `${status}: ${count}`)
+                                        .join('<br>')
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+        });
+}
+</script>
+{% endblock %}

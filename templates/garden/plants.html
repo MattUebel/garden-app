@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Plants{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Add Plant</h5>
+            </div>
+            <div class="card-body">
+                <form id="plant-form">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="variety" class="form-label">Variety</label>
+                        <input type="text" class="form-control" id="variety" name="variety">
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-control" id="location" name="location" required>
+                            <!-- Garden beds will be loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="season" class="form-label">Season</label>
+                        <select class="form-control" id="season" name="season" required>
+                            <option value="spring">Spring</option>
+                            <option value="summer">Summer</option>
+                            <option value="fall">Fall</option>
+                            <option value="winter">Winter</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="planting_date" class="form-label">Planting Date</label>
+                        <input type="date" class="form-control" id="planting_date" name="planting_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expected_harvest_date" class="form-label">Expected Harvest Date</label>
+                        <input type="date" class="form-control" id="expected_harvest_date" name="expected_harvest_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Plant</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2>Plants</h2>
+            <select class="form-select w-auto" id="season-filter">
+                <option value="">All Seasons</option>
+                <option value="spring">Spring</option>
+                <option value="summer">Summer</option>
+                <option value="fall">Fall</option>
+                <option value="winter">Winter</option>
+            </select>
+        </div>
+        <div id="plants-list" class="row g-4">
+            <!-- Plants will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const STATUS_EMOJIS = {
+    'planted': '🌱',
+    'sprouted': '🌿',
+    'flowering': '🌸',
+    'harvesting': '🥬',
+    'finished': '✨'
+};
+
+const SEASON_EMOJIS = {
+    'spring': '🌷',
+    'summer': '☀️',
+    'fall': '🍂',
+    'winter': '❄️'
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadGardenBeds();
+    loadPlants();
+    setupPlantForm();
+    setupSeasonFilter();
+});
+
+function loadGardenBeds() {
+    fetch('/api/garden/beds')
+        .then(response => response.json())
+        .then(beds => {
+            const select = document.getElementById('location');
+            select.innerHTML = beds.map(bed => 
+                `<option value="Bed ${bed.id}">${bed.name} (Bed ${bed.id})</option>`
+            ).join('');
+        });
+}
+
+function loadPlants(season = '') {
+    const url = season ? `/api/garden/plants?season=${season}` : '/api/garden/plants';
+    fetch(url)
+        .then(response => response.json())
+        .then(plants => {
+            const container = document.getElementById('plants-list');
+            container.innerHTML = plants.map(plant => `
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        ${plant.images && plant.images.length > 0 ? 
+                            `<img src="${plant.images[0].url}" class="card-img-top plant-image" alt="${plant.name}">` : 
+                            `<div class="card-img-top plant-image-placeholder d-flex align-items-center justify-content-center bg-light">
+                                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                            </div>`
+                        }
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">${plant.name}</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                            <p class="card-text">
+                                <span class="badge status-${plant.status}">
+                                    ${STATUS_EMOJIS[plant.status]} ${plant.status}
+                                </span>
+                                <span class="badge season-badge season-${plant.season}">
+                                    ${SEASON_EMOJIS[plant.season]} ${plant.season}
+                                </span><br>
+                                <strong>Planted:</strong> ${new Date(plant.planting_date).toLocaleDateString()}<br>
+                                ${plant.variety ? `<strong>Variety:</strong> ${plant.variety}<br>` : ''}
+                                ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
+                            </p>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    Update Status
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'sprouted')">
+                                        ${STATUS_EMOJIS.sprouted} Sprouted
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'flowering')">
+                                        ${STATUS_EMOJIS.flowering} Flowering
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'harvesting')">
+                                        ${STATUS_EMOJIS.harvesting} Harvesting
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'finished')">
+                                        ${STATUS_EMOJIS.finished} Finished
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function setupPlantForm() {
+    const form = document.getElementById('plant-form');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.status = 'planted';  // Initial status
+        data.planting_date = new Date(data.planting_date).toISOString();
+        if (data.expected_harvest_date) {
+            data.expected_harvest_date = new Date(data.expected_harvest_date).toISOString();
+        }
+        
+        fetch('/api/garden/plants', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(() => {
+            form.reset();
+            loadPlants(document.getElementById('season-filter').value);
+        });
+    });
+}
+
+function setupSeasonFilter() {
+    const filter = document.getElementById('season-filter');
+    filter.addEventListener('change', function() {
+        loadPlants(this.value);
+    });
+}
+
+function updatePlantStatus(plantId, newStatus) {
+    fetch(`/api/garden/plants/${plantId}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ new_status: newStatus })
+    })
+    .then(response => response.json())
+    .then(() => {
+        loadPlants(document.getElementById('season-filter').value);
+    });
+}
+
+function openPhotoUpload(plantId) {
+    // Create a hidden file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = function() {
+        if (this.files && this.files[0]) {
+            const formData = new FormData();
+            formData.append('file', this.files[0]);
+            
+            fetch(`/api/images/plants/${plantId}/upload`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(() => {
+                showNotification('Photo uploaded successfully');
+                loadPlants(document.getElementById('season-filter').value);
+            })
+            .catch(handleApiError);
+        }
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+}
+</script>
+{% endblock %}

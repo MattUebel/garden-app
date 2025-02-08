@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Garden Bed Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div id="bed-details">
+                    <!-- Bed details will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8 mt-4">
+        <h3>Plants in this Bed</h3>
+        <div id="bed-plants" class="row g-4">
+            <!-- Plants will be loaded here -->
+        </div>
+    </div>
+
+    <div class="col-md-4 mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h3>Bed Statistics</h3>
+                <div id="bed-stats">
+                    <!-- Stats will be loaded here -->
+                </div>
+                <div id="status-chart" class="mt-4">
+                    <!-- Status distribution chart will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const STATUS_EMOJIS = {
+    'planted': '🌱',
+    'sprouted': '🌿',
+    'flowering': '🌸',
+    'harvesting': '🥬',
+    'finished': '✨'
+};
+
+const SEASON_EMOJIS = {
+    'spring': '🌷',
+    'summer': '☀️',
+    'fall': '🍂',
+    'winter': '❄️'
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bedId = {{ bed_id }};
+    loadBedDetails(bedId);
+    loadBedPlants(bedId);
+    loadBedStats(bedId);
+});
+
+function loadBedDetails(bedId) {
+    fetch(`/api/garden/beds/${bedId}`)
+        .then(response => response.json())
+        .then(bed => {
+            const container = document.getElementById('bed-details');
+            container.innerHTML = `
+                <h2>${bed.name}</h2>
+                <p><strong>Dimensions:</strong> ${bed.dimensions}</p>
+                ${bed.notes ? `<p><strong>Notes:</strong> ${bed.notes}</p>` : ''}
+            `;
+        });
+}
+
+function loadBedPlants(bedId) {
+    fetch('/api/garden/plants')
+        .then(response => response.json())
+        .then(plants => {
+            const bedPlants = plants.filter(p => p.location === `Bed ${bedId}`);
+            const container = document.getElementById('bed-plants');
+            
+            if (bedPlants.length === 0) {
+                container.innerHTML = '<p>No plants in this bed yet.</p>';
+                return;
+            }
+
+            container.innerHTML = bedPlants.map(plant => `
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        ${plant.images && plant.images.length > 0 ? 
+                            `<img src="${plant.images[0].url}" class="card-img-top plant-image" alt="${plant.name}">` : 
+                            `<div class="card-img-top plant-image-placeholder d-flex align-items-center justify-content-center">
+                                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                            </div>`
+                        }
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">${plant.name}</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
+                                    <i class="bi bi-camera"></i>
+                                </button>
+                            </div>
+                            <p class="card-text">
+                                <span class="badge status-${plant.status}">
+                                    ${STATUS_EMOJIS[plant.status]} ${plant.status}
+                                </span>
+                                <span class="badge season-badge season-${plant.season}">
+                                    ${SEASON_EMOJIS[plant.season]} ${plant.season}
+                                </span><br>
+                                <strong>Planted:</strong> ${formatDate(plant.planting_date)}<br>
+                                ${plant.variety ? `<strong>Variety:</strong> ${plant.variety}<br>` : ''}
+                                ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
+                            </p>
+                            <div class="btn-group">
+                                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    Update Status
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'sprouted')">
+                                        ${STATUS_EMOJIS.sprouted} Sprouted
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'flowering')">
+                                        ${STATUS_EMOJIS.flowering} Flowering
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'harvesting')">
+                                        ${STATUS_EMOJIS.harvesting} Harvesting
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'finished')">
+                                        ${STATUS_EMOJIS.finished} Finished
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function loadBedStats(bedId) {
+    fetch(`/api/stats/beds/${bedId}`)
+        .then(response => response.json())
+        .then(stats => {
+            const container = document.getElementById('bed-stats');
+            container.innerHTML = `
+                <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
+                <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
+            `;
+
+            // Create status distribution chart
+            const statusData = {
+                values: Object.values(stats.plants_by_status),
+                labels: Object.keys(stats.plants_by_status),
+                type: 'pie',
+                name: 'Plant Status'
+            };
+            
+            Plotly.newPlot('status-chart', [statusData], {
+                height: 300,
+                margin: { t: 30, b: 30, l: 30, r: 30 },
+                title: 'Status Distribution'
+            });
+        });
+}
+
+function updatePlantStatus(plantId, newStatus) {
+    fetch(`/api/garden/plants/${plantId}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ new_status: newStatus })
+    })
+    .then(response => response.json())
+    .then(() => {
+        showNotification('Plant status updated successfully');
+        loadBedPlants({{ bed_id }});
+        loadBedStats({{ bed_id }});
+    })
+    .catch(handleApiError);
+}
+
+function openPhotoUpload(plantId) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.style.display = 'none';
+    
+    input.onchange = function() {
+        if (this.files && this.files[0]) {
+            const formData = new FormData();
+            formData.append('file', this.files[0]);
+            
+            fetch(`/api/images/plants/${plantId}/upload`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(() => {
+                showNotification('Photo uploaded successfully');
+                loadBedPlants({{ bed_id }});
+            })
+            .catch(handleApiError);
+        }
+    };
+    
+    document.body.appendChild(input);
+    input.click();
+    document.body.removeChild(input);
+}
+</script>
+{% endblock %}

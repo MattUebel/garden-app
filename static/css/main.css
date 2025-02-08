@@ -1,0 +1,51 @@
+/* Custom styles for garden app */
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Status colors */
+.status-planted { color: #198754; }
+.status-sprouted { color: #79b752; }
+.status-flowering { color: #ffc107; }
+.status-harvesting { color: #fd7e14; }
+.status-finished { color: #dc3545; }
+
+/* Season badges */
+.season-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+.season-spring { background-color: #a8e6cf; }
+.season-summer { background-color: #ffd3b6; }
+.season-fall { background-color: #ffaaa5; }
+.season-winter { background-color: #d4e7f5; }
+
+/* Plant images */
+.plant-image {
+    height: 200px;
+    object-fit: cover;
+}
+
+.plant-image-placeholder {
+    height: 200px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+
+/* Emoji animations */
+@keyframes planted-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.status-planted .emoji {
+    display: inline-block;
+    animation: planted-pulse 2s infinite;
+}

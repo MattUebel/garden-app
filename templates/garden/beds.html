@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Garden Beds{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Add Garden Bed</h5>
+            </div>
+            <div class="card-body">
+                <form id="garden-bed-form">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dimensions" class="form-label">Dimensions</label>
+                        <input type="text" class="form-control" id="dimensions" name="dimensions" placeholder="e.g. 10x20" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-success">Add Bed</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <h2>Garden Beds</h2>
+        <div id="garden-beds-list" class="row g-4">
+            <!-- Garden beds will be loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadGardenBeds();
+    setupGardenBedForm();
+});
+
+function loadGardenBeds() {
+    fetch('/api/garden/beds')
+        .then(response => response.json())
+        .then(beds => {
+            const container = document.getElementById('garden-beds-list');
+            container.innerHTML = beds.map(bed => `
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">${bed.name}</h5>
+                            <p class="card-text">
+                                <strong>Dimensions:</strong> ${bed.dimensions}<br>
+                                <strong>Plants:</strong> ${bed.plants.length}<br>
+                                ${bed.notes ? `<strong>Notes:</strong> ${bed.notes}` : ''}
+                            </p>
+                            <a href="/garden/beds/${bed.id}" class="btn btn-outline-success">View Details</a>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        });
+}
+
+function setupGardenBedForm() {
+    const form = document.getElementById('garden-bed-form');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        
+        fetch('/api/garden/beds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(() => {
+            form.reset();
+            loadGardenBeds();
+        });
+    });
+}
+</script>
+{% endblock %}
