@@ -49,12 +49,19 @@ uvicorn main:app --reload
 ```
 
 ### Using Docker
-1. Build and run with Docker Compose:
+1. Build and run with Docker:
 ```bash
-docker-compose up --build
+# Using Docker Compose V2 (recommended)
+docker compose up --build
+
+# Or using individual commands
+docker build -t garden-app .
+docker run -p 8000:8000 garden-app
 ```
 
 The application will be available at http://localhost:8000
+
+> Note: This project uses Docker Compose V2. The `docker-compose` command (with a hyphen) is legacy and has been replaced by `docker compose` in modern Docker installations.
 
 ## API Documentation
 - Swagger UI: http://localhost:8000/docs
@@ -69,7 +76,7 @@ garden-app/
 ├── requirements.txt     # Production dependencies
 ├── dev-requirements.txt # Development dependencies
 ├── Dockerfile          # Docker configuration
-├── docker-compose.yml  # Docker Compose configuration
+├── compose.yaml        # Docker Compose V2 configuration
 ├── src/               # Source code modules
 │   ├── database.py    # Database configuration
 │   ├── models.py      # Database models
@@ -127,6 +134,11 @@ mypy .
    - Serverless container runtime with auto-scaling
    - Deploy using:
    ```bash
+   # Build and push to Azure Container Registry
+   docker build -t your-acr.azurecr.io/garden-app:latest .
+   docker push your-acr.azurecr.io/garden-app:latest
+   
+   # Deploy to Container Apps
    az containerapp up --name your-garden-app --resource-group your-rg --image your-acr.azurecr.io/garden-app:latest
    ```
 
