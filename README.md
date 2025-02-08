@@ -1,33 +1,80 @@
-# FastAPI Template
+# Garden App
 
-This sample repo contains the recommended structure for a Python FastAPI project. In this sample, we use `fastapi` to build a web application and the `pytest` to run tests.
+A FastAPI-based garden management system that helps track and manage your garden beds, plants, and their growth.
 
-For a more in-depth tutorial, see our [Fast API tutorial](https://code.visualstudio.com/docs/python/tutorial-fastapi).
+## Features
 
-The code in this repo aims to follow Python style guidelines as outlined in [PEP 8](https://peps.python.org/pep-0008/).
+- Garden bed management and tracking
+- Plant lifecycle monitoring
+- Image upload and processing
+- Barcode scanning support
+- Garden statistics and visualization
+- RESTful API endpoints
 
-## Set up instructions
+## Prerequisites
 
-This sample makes use of Dev Containers, in order to leverage this setup, make sure you have [Docker installed](https://www.docker.com/products/docker-desktop).
+- Python 3.11+
+- pip or pipenv
+- Docker (optional)
 
-To successfully run this example, we recommend the following VS Code extensions:
+## Getting Started
 
-- [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-- [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
-- [Python Debugger](https://marketplace.visualstudio.com/items?itemName=ms-python.debugpy)
-- [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance) 
+### Local Development
 
-In addition to these extension there a few settings that are also useful to enable. You can enable to following settings by opening the Settings editor (`Ctrl+,`) and searching for the following settings:
+1. Clone the repository:
+```bash
+git clone git@github.com:MattUebel/garden-app.git
+cd garden-app
+```
 
-- Python > Analysis > **Type Checking Mode** : `basic`
-- Python > Analysis > Inlay Hints: **Function Return Types** : `enable`
-- Python > Analysis > Inlay Hints: **Variable Types** : `enable`
+2. Set up your environment:
+```bash
+# Using pip
+python -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
 
-## Running the sample
-- Open the template folder in VS Code (**File** > **Open Folder...**)
-- Open the Command Palette in VS Code (**View > Command Palette...**) and run the **Dev Container: Reopen in Container** command.
-- Run the app using the Run and Debug view or by pressing `F5`
-- `Ctrl + click` on the URL that shows up on the terminal to open the running application 
-- Test the API functionality by navigating to `/docs` URL to view the Swagger UI
-- Configure your Python test in the Test Panel or by triggering the **Python: Configure Tests** command from the Command Palette
-- Run tests in the Test Panel or by clicking the Play Button next to the individual tests in the `test_main.py` file
+# Or using pipenv
+pipenv install
+pipenv shell
+```
+
+3. Run the application:
+```bash
+uvicorn main:app --reload
+```
+
+### Using Docker
+
+1. Build the container:
+```bash
+docker build -t garden-app .
+```
+
+2. Run the container:
+```bash
+docker run -p 8000:8000 garden-app
+```
+
+The API will be available at http://localhost:8000
+
+## API Documentation
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
+## Development
+
+### Running Tests
+```bash
+pytest
+```
+
+### Project Structure
+
+```
+garden-app/
+├── main.py           # Main application entry point
+├── models.py         # Database models
+├── src/             # Source code modules
+└── tests/           # Test files
