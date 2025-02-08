@@ -24,6 +24,10 @@ app.include_router(stats.router, prefix="/api")
 # Include frontend routes at root level
 app.include_router(frontend.router)
 
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
 @app.get("/")
 def root() -> dict[str, str]:
     return {"message": "Welcome to Garden Manager API"}
