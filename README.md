@@ -110,6 +110,45 @@ flake8
 mypy .
 ```
 
+## Cloud Deployment
+
+### Azure Deployment Options
+
+1. **Azure App Service (Recommended)**
+   - Supports Python web apps with built-in CI/CD
+   - Easy scaling and monitoring
+   - Deploy using:
+   ```bash
+   az webapp up --runtime PYTHON:3.11 --sku B1 --name your-garden-app
+   ```
+
+2. **Azure Container Apps**
+   - Containerized deployment using existing Docker setup
+   - Serverless container runtime with auto-scaling
+   - Deploy using:
+   ```bash
+   az containerapp up --name your-garden-app --resource-group your-rg --image your-acr.azurecr.io/garden-app:latest
+   ```
+
+3. **Azure Kubernetes Service (AKS)**
+   - For larger scale deployments
+   - Full container orchestration
+   - Use existing docker-compose.yml with Docker Desktop's Kubernetes
+
+### Required Azure Resources
+- Azure Database for PostgreSQL
+- Azure Storage Account (for image storage)
+- Azure Container Registry (if using containers)
+
+### Environment Configuration
+Add these to your Azure App Service Configuration:
+```
+DATABASE_URL=postgresql://<user>:<password>@<server-name>.postgres.database.azure.com:5432/garden_db
+AZURE_STORAGE_CONNECTION_STRING=<your-storage-connection-string>
+```
+
+For detailed Azure deployment instructions, see our [Azure Deployment Guide](docs/azure-deployment.md)
+
 ## Contributing
 1. Fork the repository
 2. Create a feature branch
