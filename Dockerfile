@@ -1,42 +1,43 @@
 # syntax=docker/dockerfile:1
-FROM --platform=$BUILDPLATFORM python:3.11-slim as builder
+FROM --platform=$TARGETPLATFORM python:3.11-slim as builder
 
 WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
     python3-dev \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Build wheels for numpy and pandas first
 COPY requirements.txt .
-RUN pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
+RUN pip wheel --no-deps --no-cache-dir numpy==1.24.3 pandas==2.0.3
 
 FROM --platform=$TARGETPLATFORM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libzbar0 \
     libpq5 \
     libopenjp2-7 \
-    libtiff5 \
+    libtiff6 \
     libatlas-base-dev \
-    libwebp6 \
+    libwebp7 \
     libgstreamer1.0-0 \
-    libavcodec58 \
-    libavformat58 \
-    libswscale5 \
+    ffmpeg \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy wheels from builder
-COPY --from=builder /app/wheels /wheels
-COPY --from=builder /app/requirements.txt .
-
-RUN pip install --no-cache-dir --no-index --find-links=/wheels -r requirements.txt \
-    && rm -rf /wheels
+# Copy and install pre-built wheels
+COPY --from=builder /app/*.whl /app/
+COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install *.whl \
+    && pip install -r requirements.txt
 
 COPY . .
 
