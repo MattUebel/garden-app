@@ -18,6 +18,67 @@ A FastAPI-based garden management system that helps track and manage your garden
 
 ## Getting Started
 
+### Raspberry Pi Setup
+1. Install system dependencies:
+```bash
+sudo apt update
+sudo apt install -y python3-pip python3-venv postgresql postgresql-contrib libpq-dev gcc python3-dev
+```
+
+2. Create and configure PostgreSQL database:
+```bash
+sudo -u postgres createuser pi
+sudo -u postgres createdb garden_db
+sudo -u postgres psql
+    ALTER USER pi WITH PASSWORD 'your_password';
+    GRANT ALL PRIVILEGES ON DATABASE garden_db TO pi;
+```
+
+3. Clone and set up the application:
+```bash
+git clone git@github.com:MattUebel/garden-app.git
+cd garden-app
+python3 -m venv venv
+source venv/bin/activate
+pip install wheel  # Install wheel first to help with binary dependencies
+pip install -r requirements.txt
+```
+
+4. Create a .env file:
+```bash
+DATABASE_URL=postgresql://pi:your_password@localhost:5432/garden_db
+```
+
+5. Run the application:
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+6. (Optional) Set up as a system service:
+```bash
+# Copy the service file
+sudo cp scripts/garden-app.service /etc/systemd/system/
+sudo systemctl daemon-reload
+
+# Start the service
+sudo systemctl start garden-app
+
+# Enable at boot
+sudo systemctl enable garden-app
+
+# Check status
+sudo systemctl status garden-app
+```
+
+You can view the logs using:
+```bash
+sudo journalctl -u garden-app -f
+```
+
+The application will be available at `http://<raspberry-pi-ip>:8000`
+
+> Note: For running on Raspberry Pi, we recommend using the local installation method rather than Docker due to better ARM processor support and reduced overhead.
+
 ### Local Development
 1. Clone the repository:
 ```bash
