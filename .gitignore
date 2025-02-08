@@ -20,6 +20,15 @@ wheels/
 .installed.cfg
 *.egg
 
+# FastAPI specific
+__pycache__
+*.pyc
+.pytest_cache
+.coverage
+htmlcov
+.env
+.venv
+
 # Virtual Environment
 venv/
 ENV/
@@ -32,6 +41,52 @@ env/
 *.swp
 *.swo
 
-# Project specific
+# Additional IDE
+*.sublime-project
+*.sublime-workspace
+.settings/
+
+# Docker
+docker-compose.override.yml
+.docker/
+
+# Additional Docker
+.docker
+docker-compose.override.yaml
+*.pyo
+.Python
+.dockerignore
+
+# Database
+*.sqlite3
+postgres_data/
+
+# Additional Database
+*.db
+*.rdb
+
+# Logs
 *.log
+logs/
+
+# Cache
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Development
+*.sqlite
+.python-version
+.mypy_cache/
+
+# macOS
 .DS_Store
+
+# Additional System files
+*.bak
+*.tmp
+*~
+
+# Pipenv
+Pipfile.lock
