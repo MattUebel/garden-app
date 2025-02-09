@@ -15,10 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt -r dev-requirements.txt
 # Copy application code
 COPY . .
 
-# Create coverage directory with proper permissions
-RUN mkdir -p /app/coverage && \
-    chown -R nobody:nogroup /app/coverage && \
-    chmod 777 /app/coverage && \
+# Clean up any existing coverage files and set up permissions
+RUN rm -rf /app/coverage/* /app/.coverage && \
+    mkdir -p /app/coverage && \
+    chown -R nobody:nogroup /app/coverage /app && \
+    chmod -R 777 /app/coverage && \
     touch /app/.coverage && \
     chown nobody:nogroup /app/.coverage && \
     chmod 666 /app/.coverage

@@ -19,6 +19,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
       
+      - name: Setup coverage directory
+        run: |
+          sudo rm -rf coverage
+          mkdir -p coverage
+          sudo chown 65534:65534 coverage  # nobody:nogroup
+          sudo chmod 777 coverage
+      
       - name: Run tests
         run: |
           docker compose -f docker-compose.test.yml up --build --exit-code-from test

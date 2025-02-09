@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Clean up any stale coverage files
+rm -f /app/coverage/* /app/.coverage
+
 echo "Waiting for postgres to be ready..."
 # Wait for postgres to be ready
 for i in {1..30}; do
@@ -28,17 +31,24 @@ Base.metadata.create_all(bind=engine)  # Create all tables
 echo "Verifying database tables..."
 PGPASSWORD=$POSTGRES_PASSWORD psql -h postgres -U $POSTGRES_USER -d garden_db -c '\dt'
 
+# Ensure coverage directory exists and has proper permissions
+mkdir -p /app/coverage
+chmod -R 777 /app/coverage
+
 # Run the tests with coverage
 echo "Running tests with coverage..."
-pytest --cov=src \
+COVERAGE_FILE=/app/coverage/.coverage pytest --cov=src \
     --cov-report=term-missing \
     --cov-report=html:/app/coverage \
     --cov-report=xml:/app/coverage/coverage.xml \
-    --cov-report=json:coverage/coverage.json \
+    --cov-report=json:/app/coverage/coverage.json \
     -v \
     --junitxml=/app/coverage/junit.xml
 
 exit_code=$?
+
+# Ensure coverage files are accessible
+chmod -R 777 /app/coverage
 
 # Always generate coverage badge, even on failure
 coverage-badge -o /app/coverage/coverage.svg

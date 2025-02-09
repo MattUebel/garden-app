@@ -25,5 +25,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://garden_user:garden_password@postgres:5432/garden_db
       - PYTHONPATH=/app
+      - COVERAGE_FILE=/app/coverage/.coverage
     volumes:
-      - ./coverage:/app/coverage
+      - ./coverage:/app/coverage:rw
+    user: nobody
