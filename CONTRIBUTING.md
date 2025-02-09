@@ -46,6 +46,42 @@ flake8
 mypy .
 ```
 
+## Testing Guidelines
+
+### Writing Tests
+
+1. All new features must include corresponding tests
+2. Tests should be placed in the `tests/` directory following the existing structure
+3. Use the provided fixtures from `conftest.py`:
+   - `engine`: Database engine fixture
+   - `test_db`: Database session fixture
+   - `client`: FastAPI TestClient fixture
+   - `mock_storage`: File storage mock fixture
+
+### Test Best Practices
+
+1. Use descriptive test names that explain the scenario being tested
+2. Follow the Arrange-Act-Assert pattern
+3. Test both success and error cases
+4. Mock external dependencies using fixtures
+5. Keep tests focused and atomic
+6. Use parameterized tests for multiple similar scenarios
+
+### Running Tests
+
+Before submitting a PR:
+1. Ensure all tests pass locally
+2. Check the coverage report
+3. Add new tests for any new functionality
+4. Verify existing tests aren't broken
+
+### Database Testing
+
+- Tests use a dedicated PostgreSQL database
+- Each test gets a fresh database state
+- Transactions are automatically rolled back
+- Use the `test_db` fixture for database access
+
 ## Local Development Environment
 1. Set up PostgreSQL database
 2. Copy `.env.example` to `.env` and configure your environment variables

@@ -1,23 +1,23 @@
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, validator
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from .database import Base
 
 class Season(str, Enum):
-    SPRING = "spring"
-    SUMMER = "summer"
-    FALL = "fall"
-    WINTER = "winter"
+    SPRING = "SPRING"
+    SUMMER = "SUMMER"
+    FALL = "FALL"
+    WINTER = "WINTER"
 
 class PlantStatus(str, Enum):
-    PLANTED = "planted"
-    SPROUTED = "sprouted"
-    FLOWERING = "flowering"
-    HARVESTING = "harvesting"
-    FINISHED = "finished"
+    PLANTED = "PLANTED"
+    SPROUTED = "SPROUTED"
+    FLOWERING = "FLOWERING"
+    HARVESTING = "HARVESTING"
+    FINISHED = "FINISHED"
 
 class BarcodeType(str, Enum):
     QR = "QR"
@@ -49,12 +49,28 @@ class Plant(BaseModel):
     notes: Optional[str] = None
     seed_packet_barcode: Optional[BarcodeData] = None
 
+    @validator('planting_date', 'expected_harvest_date', pre=True)
+    def parse_date(cls, value):
+        if isinstance(value, (date, datetime)):
+            return value
+        try:
+            return datetime.fromisoformat(value) if value else None
+        except (TypeError, ValueError):
+            return datetime.strptime(value, '%Y-%m-%d') if value else None
+
 class GardenBed(BaseModel):
     id: Optional[int] = None
     name: str
     dimensions: str
     plants: List[Plant] = []
     notes: Optional[str] = None
+
+    @validator('dimensions')
+    def validate_dimensions(cls, v):
+        import re
+        if not re.match(r'^[1-9]\d*x[1-9]\d*$', v):
+            raise ValueError('Dimensions must be in format LxW where L and W are positive integers')
+        return v
 
 class GardenStats(BaseModel):
     total_plants: int

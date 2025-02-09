@@ -164,3 +164,30 @@ az monitor app-insights component create \
 3. Set up network security groups
 4. Implement role-based access control (RBAC)
 5. Enable Azure Security Center
+
+## Testing and CI/CD Integration
+
+### Automated Testing in Azure Pipelines
+1. Configure test database in Azure PostgreSQL
+   ```bash
+   az postgres flexible-server database create \
+     --resource-group garden-app-rg \
+     --server-name garden-db-server \
+     --database-name garden_test_db
+   ```
+
+2. Set up test environment variables in Azure Pipeline:
+   - `DATABASE_URL`: Point to test database
+   - `TEST_STORAGE_ACCOUNT`: Dedicated test storage account
+
+3. Test stages in deployment:
+   - Run unit tests before deployment
+   - Run integration tests in staging environment
+   - Generate and publish test coverage reports
+   - Archive test artifacts
+
+### Test Environment Management
+- Use separate database for testing
+- Implement database cleanup after tests
+- Use mock storage for file operations
+- Reset test data between test runs

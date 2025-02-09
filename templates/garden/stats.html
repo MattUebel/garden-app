@@ -86,28 +86,10 @@ function loadOverallStats() {
 }
 
 function loadSeasonChart() {
-    fetch('/api/stats')
+    fetch('/api/stats/charts/plants-by-season')
         .then(response => response.json())
-        .then(stats => {
-            const data = {
-                x: Object.keys(stats.plants_by_season),
-                y: Object.values(stats.plants_by_season),
-                type: 'bar',
-                marker: {
-                    color: '#198754'
-                }
-            };
-            
-            Plotly.newPlot('season-chart', [data], {
-                height: 400,
-                showlegend: false,
-                xaxis: {
-                    title: 'Season'
-                },
-                yaxis: {
-                    title: 'Number of Plants'
-                }
-            });
+        .then(chartData => {
+            Plotly.newPlot('season-chart', chartData.data, chartData.layout);
         });
 }
 

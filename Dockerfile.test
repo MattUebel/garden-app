@@ -1,0 +1,40 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install PostgreSQL client and zbar library
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    libzbar0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt dev-requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt -r dev-requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create coverage directory with proper permissions
+RUN mkdir -p /app/coverage && \
+    chown -R nobody:nogroup /app/coverage && \
+    chmod 777 /app/coverage && \
+    touch /app/.coverage && \
+    chown nobody:nogroup /app/.coverage && \
+    chmod 666 /app/.coverage
+
+# Make the test script executable
+RUN chmod +x /app/scripts/run-tests.sh
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV DATABASE_URL=postgresql://garden_user:garden_password@postgres:5432/garden_db
+ENV POSTGRES_USER=garden_user
+ENV POSTGRES_PASSWORD=garden_password
+ENV COVERAGE_FILE=/app/coverage/.coverage
+
+# Switch to non-root user
+USER nobody
+
+# Use the test script as the entry point
+CMD ["/app/scripts/run-tests.sh"]

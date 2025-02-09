@@ -9,41 +9,50 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15-alpine
-        env:
-          POSTGRES_USER: garden_user
-          POSTGRES_PASSWORD: garden_password
-          POSTGRES_DB: garden_db
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
     - uses: actions/checkout@v3
     
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+      
+    - name: Setup Docker cache
+      uses: actions/cache@v3
       with:
-        python-version: '3.11'
-        
-    - name: Install dependencies
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+    
+    - name: Run tests in Docker
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r dev-requirements.txt
-        
-    - name: Run tests
-      env:
-        DATABASE_URL: postgresql://garden_user:garden_password@localhost:5432/garden_db
-      run: |
-        pytest
-        
-    - name: Run linting
-      run: |
-        flake8 .
-        mypy .
+        docker compose -f docker-compose.test.yml up --build --exit-code-from test
+        docker compose -f docker-compose.test.yml down -v
+
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: coverage/
+      if: always()
+    
+    - name: Create Coverage Badge
+      uses: schneegans/dynamic-badges-action@v1.6.0
+      with:
+        auth: ${{ secrets.GIST_SECRET }}
+        gistID: your-gist-id # Replace with actual Gist ID
+        filename: garden-app-coverage.json
+        label: coverage
+        message: ${{ steps.coverage.outputs.percentage }}%
+        color: ${{ steps.coverage.outputs.color }}
+        namedLogo: pytest
+      if: github.ref == 'refs/heads/main'
+
+    - name: Post Coverage Comment
+      uses: MishaKav/pytest-coverage-comment@main
+      with:
+        pytest-coverage-path: ./coverage/coverage.xml
+        junitxml-path: ./coverage/junit.xml
+      if: github.event_name == 'pull_request'
 
   build:
     needs: test
@@ -55,6 +64,14 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       
+    - name: Setup Docker cache
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
+      
     - name: Build and push
       uses: docker/build-push-action@v4
       with:
@@ -62,5 +79,6 @@ jobs:
         platforms: linux/amd64,linux/arm64,linux/arm/v7
         push: false  # Set to true after setting up container registry
         tags: garden-app:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=buildx
+        cache-to: type=gha,scope=buildx,mode=max
+        outputs: type=docker

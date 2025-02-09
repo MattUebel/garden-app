@@ -89,3 +89,22 @@ htmlcov/
 
 # Pipenv
 Pipfile.lock
+
+# Coverage reports
+coverage/
+.coverage.*
+coverage.*
+junit.xml
+
+# Additional test artifacts
+.tox/
+nosetests.xml
+coverage.xml
+
+# SQLAlchemy
+*.sqlite-journal
+
+# Pytest
+.pytest_history/
+__pycache__/*
+*/__pycache__/*

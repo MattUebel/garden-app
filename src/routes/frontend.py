@@ -4,7 +4,9 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi import Request
 
-router = APIRouter()
+# Change router to use /ui prefix
+router = APIRouter(prefix="/ui")
+
 templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_class=HTMLResponse)

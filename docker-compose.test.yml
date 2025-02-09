@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: garden_user
+      POSTGRES_PASSWORD: garden_password
+      POSTGRES_DB: garden_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U garden_user -d garden_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://garden_user:garden_password@postgres:5432/garden_db
+      - PYTHONPATH=/app
+    volumes:
+      - ./coverage:/app/coverage
