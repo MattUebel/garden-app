@@ -1,4 +1,4 @@
-name: CI/CD
+name: CI
 
 on:
   push:
@@ -8,85 +8,18 @@ on:
 
 permissions:
   contents: read
-  actions: write # Changed to write for artifact uploads
   checks: write
-  pull-requests: write
-  id-token: write
-  packages: read
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - uses: actions/checkout@v3
       
-    - name: Setup Docker cache
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-    
-    - name: Run tests in Docker
-      run: |
-        docker compose -f docker-compose.test.yml up --build --exit-code-from test
-        docker compose -f docker-compose.test.yml down -v
-
-    - name: Upload test coverage
-      uses: actions/upload-artifact@v3
-      with:
-        name: coverage-report
-        path: coverage/
-      if: always()
-    
-    - name: Create Coverage Badge
-      uses: schneegans/dynamic-badges-action@v1.6.0
-      with:
-        auth: ${{ secrets.GIST_SECRET }}
-        gistID: your-gist-id # Replace with actual Gist ID
-        filename: garden-app-coverage.json
-        label: coverage
-        message: ${{ steps.coverage.outputs.percentage }}%
-        color: ${{ steps.coverage.outputs.color }}
-        namedLogo: pytest
-      if: github.ref == 'refs/heads/main'
-
-    - name: Post Coverage Comment
-      uses: MishaKav/pytest-coverage-comment@main
-      with:
-        pytest-coverage-path: ./coverage/coverage.xml
-        junitxml-path: ./coverage/junit.xml
-      if: github.event_name == 'pull_request'
-
-  build:
-    needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
       
-    - name: Setup Docker cache
-      uses: actions/cache@v3
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ github.sha }}
-        restore-keys: |
-          ${{ runner.os }}-buildx-
-      
-    - name: Build and push
-      uses: docker/build-push-action@v4
-      with:
-        context: .
-        platforms: linux/amd64,linux/arm64,linux/arm/v7
-        push: false  # Set to true after setting up container registry
-        tags: garden-app:latest
-        cache-from: type=gha,scope=buildx
-        cache-to: type=gha,scope=buildx,mode=max
-        outputs: type=docker
+      - name: Run tests
+        run: |
+          docker compose -f docker-compose.test.yml up --build --exit-code-from test
+          docker compose -f docker-compose.test.yml down -v
