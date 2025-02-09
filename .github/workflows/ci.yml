@@ -8,12 +8,11 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write # Changed to write for artifact uploads
   checks: write
   pull-requests: write
   id-token: write
-  packages: read # Add packages permission
-  metadata: read # Add metadata permission required for artifact actions
+  packages: read
 
 jobs:
   test:
