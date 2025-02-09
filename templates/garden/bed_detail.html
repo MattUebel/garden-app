@@ -7,7 +7,7 @@
     <div class="col-md-12">
         <div class="card">
             <div class="card-body">
-                <div id="bed-details">
+                <div id="bed-details" class="d-flex justify-content-between align-items-start">
                     <!-- Bed details will be loaded here -->
                 </div>
             </div>
@@ -15,7 +15,12 @@
     </div>
 
     <div class="col-md-8 mt-4">
-        <h3>Plants in this Bed</h3>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>Plants in this Bed</h3>
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPlantModal">
+                <i class="bi bi-plus-circle"></i> Add Plant
+            </button>
+        </div>
         <div id="bed-plants" class="row g-4">
             <!-- Plants will be loaded here -->
         </div>
@@ -35,30 +40,173 @@
         </div>
     </div>
 </div>
+
+<!-- Add Plant Modal -->
+<div class="modal fade" id="addPlantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Plant to Bed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="quick-plant-form">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="variety" class="form-label">Variety</label>
+                        <input type="text" class="form-control" id="variety" name="variety">
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="season" class="form-label">Season</label>
+                        <select class="form-select" id="season" name="season" required>
+                            <option value="SPRING">Spring 🌷</option>
+                            <option value="SUMMER">Summer ☀️</option>
+                            <option value="FALL">Fall 🍂</option>
+                            <option value="WINTER">Winter ❄️</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="planting_date" class="form-label">Planting Date</label>
+                        <input type="date" class="form-control" id="planting_date" name="planting_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="expected_harvest_date" class="form-label">Expected Harvest Date</label>
+                        <input type="date" class="form-control" id="expected_harvest_date" name="expected_harvest_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitQuickPlantForm()">Add Plant</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Plant Modal -->
+<div class="modal fade" id="editPlantModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Plant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-plant-form">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="edit-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-variety" class="form-label">Variety</label>
+                        <input type="text" class="form-control" id="edit-variety" name="variety">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="edit-quantity" name="quantity" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-season" class="form-label">Season</label>
+                        <select class="form-select" id="edit-season" name="season" required>
+                            <option value="SPRING">Spring 🌷</option>
+                            <option value="SUMMER">Summer ☀️</option>
+                            <option value="FALL">Fall 🍂</option>
+                            <option value="WINTER">Winter ❄️</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-planting-date" class="form-label">Planting Date</label>
+                        <input type="date" class="form-control" id="edit-planting-date" name="planting_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-expected-harvest-date" class="form-label">Expected Harvest Date</label>
+                        <input type="date" class="form-control" id="edit-expected-harvest-date" name="expected_harvest_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="edit-notes" name="notes" rows="3"></textarea>
+                    </div>
+                    <input type="hidden" id="edit-plant-id" name="id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" onclick="deletePlant()">Delete Plant</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditPlantForm()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Bed Modal -->
+<div class="modal fade" id="editBedModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Garden Bed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="edit-bed-form">
+                    <div class="mb-3">
+                        <label for="edit-name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="edit-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-dimensions" class="form-label">Dimensions</label>
+                        <input type="text" class="form-control" id="edit-dimensions" name="dimensions" placeholder="e.g. 10x20" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="edit-notes" name="notes" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditBedForm()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 const STATUS_EMOJIS = {
-    'planted': '🌱',
-    'sprouted': '🌿',
-    'flowering': '🌸',
-    'harvesting': '🥬',
-    'finished': '✨'
+    'PLANTED': '🌱',
+    'SPROUTED': '🌿',
+    'FLOWERING': '🌸',
+    'HARVESTING': '🥬',
+    'FINISHED': '✨'
 };
 
 const SEASON_EMOJIS = {
-    'spring': '🌷',
-    'summer': '☀️',
-    'fall': '🍂',
-    'winter': '❄️'
+    'SPRING': '🌷',
+    'SUMMER': '☀️',
+    'FALL': '🍂',
+    'WINTER': '❄️'
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    const bedId = {{ bed_id }};
+    const bedId = parseInt('{{ bed_id }}');
     loadBedDetails(bedId);
     loadBedPlants(bedId);
     loadBedStats(bedId);
+    
+    // Set today as default planting date
+    document.getElementById('planting_date').valueAsDate = new Date();
 });
 
 function loadBedDetails(bedId) {
@@ -67,10 +215,20 @@ function loadBedDetails(bedId) {
         .then(bed => {
             const container = document.getElementById('bed-details');
             container.innerHTML = `
-                <h2>${bed.name}</h2>
-                <p><strong>Dimensions:</strong> ${bed.dimensions}</p>
-                ${bed.notes ? `<p><strong>Notes:</strong> ${bed.notes}</p>` : ''}
+                <div>
+                    <h2>${bed.name}</h2>
+                    <p><strong>Dimensions:</strong> ${bed.dimensions}</p>
+                    ${bed.notes ? `<p><strong>Notes:</strong> ${bed.notes}</p>` : ''}
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary" onclick="editBed(${bedId})">
+                        <i class="bi bi-pencil"></i> Edit Bed
+                    </button>
+                </div>
             `;
+            
+            // Store bed data for edit form
+            window.currentBed = bed;
         });
 }
 
@@ -97,10 +255,18 @@ function loadBedPlants(bedId) {
                         }
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title">${plant.name}</h5>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
-                                    <i class="bi bi-camera"></i>
-                                </button>
+                                <div>
+                                    <h5 class="card-title">${plant.name}</h5>
+                                    ${plant.quantity > 1 ? `<span class="text-muted">(${plant.quantity} plants)</span>` : ''}
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="editPlant(${JSON.stringify(plant).replace(/"/g, '&quot;')})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
+                                        <i class="bi bi-camera"></i>
+                                    </button>
+                                </div>
                             </div>
                             <p class="card-text">
                                 <span class="badge status-${plant.status}">
@@ -118,17 +284,17 @@ function loadBedPlants(bedId) {
                                     Update Status
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'sprouted')">
-                                        ${STATUS_EMOJIS.sprouted} Sprouted
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'SPROUTED')">
+                                        ${STATUS_EMOJIS.SPROUTED} Sprouted
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'flowering')">
-                                        ${STATUS_EMOJIS.flowering} Flowering
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'FLOWERING')">
+                                        ${STATUS_EMOJIS.FLOWERING} Flowering
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'harvesting')">
-                                        ${STATUS_EMOJIS.harvesting} Harvesting
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'HARVESTING')">
+                                        ${STATUS_EMOJIS.HARVESTING} Harvesting
                                     </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'finished')">
-                                        ${STATUS_EMOJIS.finished} Finished
+                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'FINISHED')">
+                                        ${STATUS_EMOJIS.FINISHED} Finished
                                     </a></li>
                                 </ul>
                             </div>
@@ -171,13 +337,14 @@ function updatePlantStatus(plantId, newStatus) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ new_status: newStatus })
+        body: JSON.stringify({ new_status: newStatus.toUpperCase() })
     })
     .then(response => response.json())
     .then(() => {
         showNotification('Plant status updated successfully');
-        loadBedPlants({{ bed_id }});
-        loadBedStats({{ bed_id }});
+        const bedId = parseInt('{{ bed_id }}');
+        loadBedPlants(bedId);
+        loadBedStats(bedId);
     })
     .catch(handleApiError);
 }
@@ -200,7 +367,8 @@ function openPhotoUpload(plantId) {
             .then(response => response.json())
             .then(() => {
                 showNotification('Photo uploaded successfully');
-                loadBedPlants({{ bed_id }});
+                const bedId = parseInt('{{ bed_id }}');
+                loadBedPlants(bedId);
             })
             .catch(handleApiError);
         }
@@ -209,6 +377,141 @@ function openPhotoUpload(plantId) {
     document.body.appendChild(input);
     input.click();
     document.body.removeChild(input);
+}
+
+function submitQuickPlantForm() {
+    const form = document.getElementById('quick-plant-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Add required fields
+    data.status = 'PLANTED';
+    const bedId = parseInt('{{ bed_id }}');
+    data.location = 'Bed ' + bedId;
+    data.quantity = parseInt(data.quantity);
+    data.planting_date = new Date(data.planting_date).toISOString();
+    if (data.expected_harvest_date) {
+        data.expected_harvest_date = new Date(data.expected_harvest_date).toISOString();
+    }
+    
+    fetch('/api/garden/plants', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(() => {
+        form.reset();
+        document.getElementById('planting_date').valueAsDate = new Date();
+        document.getElementById('addPlantModal').querySelector('[data-bs-dismiss="modal"]').click();
+        showNotification('Plant added successfully');
+        loadBedPlants(bedId);
+        loadBedStats(bedId);
+    })
+    .catch(handleApiError);
+}
+
+function editBed(bedId) {
+    // Populate edit form with current bed data
+    document.getElementById('edit-name').value = window.currentBed.name;
+    document.getElementById('edit-dimensions').value = window.currentBed.dimensions;
+    document.getElementById('edit-notes').value = window.currentBed.notes || '';
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('editBedModal')).show();
+}
+
+function submitEditBedForm() {
+    const form = document.getElementById('edit-bed-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    const bedId = parseInt('{{ bed_id }}');
+    
+    fetch(`/api/garden/beds/${bedId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(() => {
+        document.getElementById('editBedModal').querySelector('[data-bs-dismiss="modal"]').click();
+        showNotification('Garden bed updated successfully');
+        loadBedDetails(bedId);
+        loadBedStats(bedId);
+    })
+    .catch(handleApiError);
+}
+
+function editPlant(plant) {
+    // Set form values
+    const form = document.getElementById('edit-plant-form');
+    form.querySelector('#edit-plant-id').value = plant.id;
+    form.querySelector('#edit-name').value = plant.name;
+    form.querySelector('#edit-variety').value = plant.variety || '';
+    form.querySelector('#edit-quantity').value = plant.quantity;
+    form.querySelector('#edit-season').value = plant.season;
+    form.querySelector('#edit-planting-date').value = plant.planting_date.split('T')[0];
+    if (plant.expected_harvest_date) {
+        form.querySelector('#edit-expected-harvest-date').value = plant.expected_harvest_date.split('T')[0];
+    }
+    form.querySelector('#edit-notes').value = plant.notes || '';
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('editPlantModal')).show();
+}
+
+function submitEditPlantForm() {
+    const form = document.getElementById('edit-plant-form');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+    const plantId = data.id;
+    delete data.id;  // Remove id from payload
+    
+    // Format dates
+    data.quantity = parseInt(data.quantity);
+    data.planting_date = new Date(data.planting_date).toISOString();
+    if (data.expected_harvest_date) {
+        data.expected_harvest_date = new Date(data.expected_harvest_date).toISOString();
+    }
+    
+    fetch(`/api/garden/plants/${plantId}`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(() => {
+        document.getElementById('editPlantModal').querySelector('[data-bs-dismiss="modal"]').click();
+        showNotification('Plant updated successfully');
+        const bedId = parseInt('{{ bed_id }}');
+        loadBedPlants(bedId);
+        loadBedStats(bedId);
+    })
+    .catch(handleApiError);
+}
+
+function deletePlant() {
+    const plantId = document.getElementById('edit-plant-id').value;
+    if (confirm('Are you sure you want to delete this plant? This action cannot be undone.')) {
+        fetch(`/api/garden/plants/${plantId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(() => {
+            document.getElementById('editPlantModal').querySelector('[data-bs-dismiss="modal"]').click();
+            showNotification('Plant deleted successfully');
+            const bedId = parseInt('{{ bed_id }}');
+            loadBedPlants(bedId);
+            loadBedStats(bedId);
+        })
+        .catch(handleApiError);
+    }
 }
 </script>
 {% endblock %}

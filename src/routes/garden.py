@@ -52,22 +52,65 @@ def list_garden_beds(db: Session = Depends(get_db)) -> list[GardenBed]:
                 name=bed.name,
                 dimensions=bed.dimensions,
                 notes=bed.notes,
-                plants=[]
+                plants=[
+                    Plant(
+                        id=p.id,
+                        name=p.name,
+                        variety=p.variety,
+                        planting_date=p.planting_date,
+                        location=f"Bed {bed.id}",
+                        status=PlantStatus(p.status),
+                        season=Season(p.season),
+                        expected_harvest_date=p.expected_harvest_date,
+                        notes=p.notes
+                    )
+                    for p in bed.plants
+                ]
             )
             for bed in db_beds
         ]
-    except SQLAlchemyError as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Database connection error"
-        ) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/beds/{bed_id}")
 def get_garden_bed(bed_id: int, db: Session = Depends(get_db)) -> GardenBed:
     db_bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
     if not db_bed:
         raise HTTPException(status_code=404, detail="Garden bed not found")
+    
+    return GardenBed(
+        id=db_bed.id,
+        name=db_bed.name,
+        dimensions=db_bed.dimensions,
+        notes=db_bed.notes,
+        plants=[
+            Plant(
+                id=p.id,
+                name=p.name,
+                variety=p.variety,
+                planting_date=p.planting_date,
+                location=f"Bed {db_bed.id}",
+                status=PlantStatus(p.status),
+                season=Season(p.season),
+                expected_harvest_date=p.expected_harvest_date,
+                notes=p.notes
+            )
+            for p in db_bed.plants
+        ]
+    )
+
+@router.patch("/beds/{bed_id}", response_model=GardenBed)
+def update_garden_bed(bed_id: int, garden_bed: GardenBed, db: Session = Depends(get_db)) -> GardenBed:
+    db_bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
+    if not db_bed:
+        raise HTTPException(status_code=404, detail="Garden bed not found")
+    
+    db_bed.name = garden_bed.name
+    db_bed.dimensions = garden_bed.dimensions
+    db_bed.notes = garden_bed.notes
+    
+    db.commit()
+    db.refresh(db_bed)
     
     return GardenBed(
         id=db_bed.id,
@@ -113,6 +156,7 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         bed_id=bed_id,
         status=plant.status.value,
         season=plant.season.value,
+        quantity=plant.quantity,
         expected_harvest_date=plant.expected_harvest_date,
         notes=plant.notes
     )
@@ -128,6 +172,7 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         location=f"Bed {bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes
     )
@@ -148,6 +193,7 @@ def list_plants(season: Season | None = None, db: Session = Depends(get_db)) -> 
             location=f"Bed {p.bed_id}",
             status=PlantStatus(p.status),
             season=Season(p.season),
+            quantity=p.quantity,
             expected_harvest_date=p.expected_harvest_date,
             notes=p.notes
         )
@@ -169,9 +215,10 @@ def get_plant(plant_id: int, db: Session = Depends(get_db)) -> Plant:
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes,
-        images=[],  # Images loaded separately
+        images=[]  # Images loaded separately
     )
 
 @router.patch("/plants/{plant_id}/status", response_model=Plant)
@@ -204,6 +251,39 @@ def update_plant_status(
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        quantity=db_plant.quantity,
+        expected_harvest_date=db_plant.expected_harvest_date,
+        notes=db_plant.notes
+    )
+
+@router.patch("/plants/{plant_id}", response_model=Plant)
+def update_plant(plant_id: int, plant_update: Plant, db: Session = Depends(get_db)) -> Plant:
+    """Update a plant's details."""
+    db_plant = db.query(DBPlant).filter(DBPlant.id == plant_id).first()
+    if not db_plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    
+    # Update fields
+    db_plant.name = plant_update.name
+    db_plant.variety = plant_update.variety
+    db_plant.quantity = plant_update.quantity
+    db_plant.season = plant_update.season.value
+    db_plant.planting_date = plant_update.planting_date
+    db_plant.expected_harvest_date = plant_update.expected_harvest_date
+    db_plant.notes = plant_update.notes
+    
+    db.commit()
+    db.refresh(db_plant)
+    
+    return Plant(
+        id=db_plant.id,
+        name=db_plant.name,
+        variety=db_plant.variety,
+        planting_date=db_plant.planting_date,
+        location=f"Bed {db_plant.bed_id}",
+        status=PlantStatus(db_plant.status),
+        season=Season(db_plant.season),
+        quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes
     )

@@ -44,6 +44,7 @@ class Plant(BaseModel):
     location: str  # Location in garden
     status: PlantStatus
     season: Season
+    quantity: int = 1
     expected_harvest_date: Optional[datetime] = None
     images: List[PlantImage] = []
     notes: Optional[str] = None
@@ -57,6 +58,12 @@ class Plant(BaseModel):
             return datetime.fromisoformat(value) if value else None
         except (TypeError, ValueError):
             return datetime.strptime(value, '%Y-%m-%d') if value else None
+
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v < 1:
+            raise ValueError('Quantity must be at least 1')
+        return v
 
 class GardenBed(BaseModel):
     id: Optional[int] = None
@@ -96,6 +103,7 @@ class DBPlant(Base):
     bed_id = sa.Column(sa.Integer, sa.ForeignKey("garden_beds.id"))
     status = sa.Column(sa.String)
     season = sa.Column(sa.String)
+    quantity = sa.Column(sa.Integer, default=1)
     expected_harvest_date = sa.Column(sa.DateTime, nullable=True)
     notes = sa.Column(sa.String, nullable=True)
     garden_bed = relationship("DBGardenBed", back_populates="plants")

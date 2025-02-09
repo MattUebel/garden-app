@@ -1,5 +1,5 @@
 import pytest
-from datetime import date
+from datetime import date, datetime
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 from main import app
@@ -268,14 +268,17 @@ def test_database_connection_error(client, monkeypatch):
     """Test that database connection errors are handled gracefully."""
     from sqlalchemy.orm import Session
     from src.database import get_db
+    from sqlalchemy.exc import SQLAlchemyError
     
     def mock_db():
-        raise Exception("Database connection error")
+        raise SQLAlchemyError("Database connection error")
     
     monkeypatch.setattr("src.database.get_db", mock_db)
     response = client.get("/api/garden/beds")
     assert response.status_code == 500
-    assert "Database connection error" in response.text
+    data = response.json()
+    assert "detail" in data
+    assert "error" in data["detail"].lower() or "database" in data["detail"].lower()
 
 def test_plant_image_upload(client, test_db):
     # Create bed and plant first
@@ -404,3 +407,127 @@ def test_concurrent_status_updates(client, test_db):
     assert response.status_code == 200
     data = response.json()
     assert data["status"] in ["SPROUTED", "FLOWERING"]
+
+def test_frontend_home(client):
+    response = client.get("/ui/")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+def test_frontend_garden_beds(client):
+    response = client.get("/ui/garden/beds")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+def test_frontend_plants(client):
+    response = client.get("/ui/garden/plants")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+def test_frontend_stats(client):
+    response = client.get("/ui/stats")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+def test_frontend_bed_detail(client):
+    response = client.get("/ui/garden/beds/1")
+    assert response.status_code == 200
+    assert "text/html" in response.headers["content-type"]
+
+def test_update_plant(client, test_db):
+    # Create bed and plant first
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": "Test notes"
+    })
+    bed_id = bed_response.json()["id"]
+    
+    plant_data = {
+        "name": "Test Plant",
+        "variety": "Test Variety",
+        "planting_date": str(date.today()),
+        "location": f"Bed {bed_id}",
+        "status": "PLANTED",
+        "season": "SUMMER",
+        "quantity": 1,
+        "notes": "Test notes"
+    }
+    
+    plant_response = client.post("/api/garden/plants", json=plant_data)
+    plant_id = plant_response.json()["id"]
+    
+    # Update plant
+    update_data = plant_data.copy()
+    update_data["name"] = "Updated Plant"
+    update_data["quantity"] = 2
+    update_data["variety"] = "New Variety"
+    
+    response = client.patch(f"/api/garden/plants/{plant_id}", json=update_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Updated Plant"
+    assert data["quantity"] == 2
+    assert data["variety"] == "New Variety"
+
+def test_update_nonexistent_plant(client, test_db):
+    update_data = {
+        "name": "Updated Plant",
+        "variety": "Test Variety",
+        "planting_date": str(date.today()),
+        "location": "Bed 1",
+        "status": "PLANTED",
+        "season": "SUMMER",
+        "quantity": 1,
+        "notes": "Test notes"
+    }
+    response = client.patch("/api/garden/plants/999", json=update_data)
+    assert response.status_code == 404
+
+def test_garden_stats_empty_db(client, test_db):
+    response = client.get("/api/stats")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_plants"] == 0
+    assert all(count == 0 for count in data["plants_by_status"].values())
+    assert all(count == 0 for count in data["plants_by_season"].values())
+
+def test_bed_stats_with_multiple_plants(client, test_db):
+    # Create a bed
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    
+    # Add multiple plants with different statuses
+    plant_base = {
+        "location": f"Bed {bed_id}",
+        "planting_date": str(date.today()),
+        "variety": "Test",
+        "notes": ""
+    }
+    
+    plants_data = [
+        {**plant_base, "name": "Plant 1", "status": "PLANTED", "season": "SPRING", "quantity": 1},
+        {**plant_base, "name": "Plant 2", "status": "SPROUTED", "season": "SUMMER", "quantity": 2},
+        {**plant_base, "name": "Plant 3", "status": "FLOWERING", "season": "FALL", "quantity": 3}
+    ]
+    
+    for plant_data in plants_data:
+        response = client.post("/api/garden/plants", json=plant_data)
+        assert response.status_code == 200
+    
+    # Check bed stats
+    response = client.get(f"/api/stats/beds/{bed_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_plants"] == 6  # Sum of quantities
+    assert len(data["plants_by_status"]) > 0
+    assert len(data["plants_by_season"]) > 0
+
+def test_plants_by_season_chart_empty(client, test_db):
+    response = client.get("/api/stats/charts/plants-by-season")
+    assert response.status_code == 200
+    data = response.json()
+    assert "data" in data

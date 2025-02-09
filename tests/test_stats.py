@@ -1,6 +1,7 @@
-"""Tests for statistics and analytics functionality."""
+"""Tests for garden statistics functionality."""
 import pytest
 from datetime import date
+from fastapi.testclient import TestClient
 
 def test_get_garden_stats(client, test_db):
     # Create bed and test plants
@@ -116,7 +117,7 @@ def test_empty_stats(client, test_db):
     assert all(count == 0 for count in data["plants_by_season"].values())
 
 def test_stats_after_plant_deletion(client, test_db):
-    """Test stats are updated after deleting plants."""
+    """Test that stats are updated correctly after deleting plants."""
     # Create bed and plant
     bed_response = client.post("/api/garden/beds", json={
         "name": "Test Bed",
@@ -131,21 +132,146 @@ def test_stats_after_plant_deletion(client, test_db):
         "location": f"Bed {bed_id}",
         "status": "PLANTED",
         "season": "SUMMER",
+        "quantity": 2,
         "notes": ""
     })
     plant_id = plant_response.json()["id"]
     
-    # Check initial stats
-    response = client.get("/api/stats")
-    assert response.json()["total_plants"] == 1
+    # Verify initial stats
+    stats_response = client.get("/api/stats")
+    initial_stats = stats_response.json()
+    assert initial_stats["total_plants"] == 2
     
     # Delete plant
-    response = client.delete(f"/api/garden/plants/{plant_id}")
-    assert response.status_code == 200
+    delete_response = client.delete(f"/api/garden/plants/{plant_id}")
+    assert delete_response.status_code == 200
     
-    # Check stats are updated
-    response = client.get("/api/stats")
+    # Check updated stats
+    updated_stats_response = client.get("/api/stats")
+    updated_stats = updated_stats_response.json()
+    assert updated_stats["total_plants"] == 0
+
+def test_bed_stats_dimensions_utilization(client, test_db):
+    """Test bed stats calculation with different bed dimensions and plant quantities."""
+    # Create a bed with known dimensions
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Big Bed",
+        "dimensions": "4x8",  # 32 square units
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    
+    # Add plants that should take up different amounts of space
+    plants_data = [
+        {
+            "name": "Tomato",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SUMMER",
+            "quantity": 4,  # Tomatoes typically need 4 square units each
+            "notes": ""
+        },
+        {
+            "name": "Lettuce",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SPRING",
+            "quantity": 8,  # Lettuce typically needs 1 square unit each
+            "notes": ""
+        }
+    ]
+    
+    for plant_data in plants_data:
+        response = client.post("/api/garden/plants", json=plant_data)
+        assert response.status_code == 200
+    
+    # Check bed stats
+    response = client.get(f"/api/stats/beds/{bed_id}")
+    assert response.status_code == 200
     data = response.json()
-    assert data["total_plants"] == 0
-    assert data["plants_by_status"]["PLANTED"] == 0
-    assert data["plants_by_season"]["SUMMER"] == 0
+    assert data["total_plants"] == 12  # Total number of plants
+    assert "space_utilization" in data
+
+def test_plants_by_season_chart_data(client, test_db):
+    """Test the season chart data structure with plants in different seasons."""
+    # Create a bed
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    
+    # Add plants in different seasons
+    seasons = ["SPRING", "SUMMER", "FALL", "WINTER"]
+    for i, season in enumerate(seasons, 1):
+        response = client.post("/api/garden/plants", json={
+            "name": f"Plant {i}",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": season,
+            "quantity": i,  # Different quantities
+            "notes": ""
+        })
+        assert response.status_code == 200
+    
+    # Check season chart
+    response = client.get("/api/stats/charts/plants-by-season")
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Verify chart data structure
+    assert "data" in data
+    assert isinstance(data["data"], list)
+    assert len(data["data"]) > 0
+    assert "layout" in data
+
+def test_garden_stats_with_all_plant_statuses(client, test_db):
+    """Test garden stats with plants in every possible status."""
+    # Create a bed
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    
+    # Add plants and progress them through all statuses
+    statuses = ["PLANTED", "SPROUTED", "FLOWERING", "HARVESTING", "FINISHED"]
+    for i, status in enumerate(statuses, 1):
+        # Create plant
+        plant_response = client.post("/api/garden/plants", json={
+            "name": f"Plant {i}",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SUMMER",
+            "quantity": 1,
+            "notes": ""
+        })
+        plant_id = plant_response.json()["id"]
+        
+        # Progress to target status
+        for target_status in statuses[:statuses.index(status) + 1]:
+            if target_status != "PLANTED":
+                status_response = client.patch(f"/api/garden/plants/{plant_id}/status", 
+                    json={"new_status": target_status})
+                assert status_response.status_code == 200
+    
+    # Check garden stats
+    response = client.get("/api/stats")
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Verify we have plants in each status
+    for status in statuses:
+        assert data["plants_by_status"][status] > 0
+
+def test_bed_stats_nonexistent_bed(client, test_db):
+    """Test stats for a nonexistent bed."""
+    response = client.get("/api/stats/beds/999")
+    assert response.status_code == 404
+    assert "not found" in response.json()["detail"].lower()

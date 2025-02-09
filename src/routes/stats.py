@@ -16,53 +16,55 @@ def get_garden_stats(db: Session = Depends(get_db)) -> GardenStats:
     # Initialize counts for all statuses and seasons
     status_counts = {status.value: 0 for status in PlantStatus}
     season_counts = {season.value: 0 for season in Season}
+    total_plants = 0
     
     # Count plants
     for plant in all_plants:
         if plant.status in status_counts:
-            status_counts[plant.status] += 1
+            status_counts[plant.status] += plant.quantity
         if plant.season in season_counts:
-            season_counts[plant.season] += 1
+            season_counts[plant.season] += plant.quantity
+        total_plants += plant.quantity
     
     return GardenStats(
-        total_plants=len(all_plants),
+        total_plants=total_plants,
         plants_by_status=status_counts,
         plants_by_season=season_counts
     )
 
 @router.get("/beds/{bed_id}")
 def get_bed_stats(bed_id: int, db: Session = Depends(get_db)):
+    """Get statistics for a specific garden bed."""
     bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
     if not bed:
         raise HTTPException(status_code=404, detail="Garden bed not found")
-        
-    bed_plants = db.query(DBPlant).filter(DBPlant.bed_id == bed_id).all()
-    
-    # Initialize counts for all statuses and seasons
-    status_counts = {status.value: 0 for status in PlantStatus}
-    season_counts = {season.value: 0 for season in Season}
-    
-    # Count plants
-    for plant in bed_plants:
-        if plant.status in status_counts:
-            status_counts[plant.status] += 1
-        if plant.season in season_counts:
-            season_counts[plant.season] += 1
-        
-    # Calculate space utilization
-    dimensions = bed.dimensions.split('x')
+
+    # Initialize counts
+    total_plants = 0
+    plants_by_status = {status.value: 0 for status in PlantStatus}
+    plants_by_season = {season.value: 0 for season in Season}
+
+    # Count plants in this bed
+    for plant in bed.plants:
+        total_plants += plant.quantity
+        plants_by_status[plant.status] += plant.quantity
+        plants_by_season[plant.season] += plant.quantity
+
+    # Calculate space utilization (if required by frontend)
     try:
-        area = float(dimensions[0]) * float(dimensions[1])
-        utilization = f"{len(bed_plants)} plants in {area} sq ft"
+        dimensions = bed.dimensions.split('x')
+        total_space = int(dimensions[0]) * int(dimensions[1])
+        space_utilization = f"{(total_plants / total_space) * 100:.1f}%"
     except (IndexError, ValueError):
-        utilization = f"{len(bed_plants)} plants in {bed.dimensions}"
-        
+        space_utilization = "N/A"
+
     return {
         "bed_name": bed.name,
-        "total_plants": len(bed_plants),
-        "plants_by_status": status_counts,
-        "plants_by_season": season_counts,
-        "space_utilization": utilization
+        "dimensions": bed.dimensions,
+        "total_plants": total_plants,
+        "plants_by_status": plants_by_status,
+        "plants_by_season": plants_by_season,
+        "space_utilization": space_utilization
     }
 
 @router.get("/charts/plants-by-season")
