@@ -12,6 +12,8 @@ permissions:
   checks: write
   pull-requests: write
   id-token: write
+  packages: read # Add packages permission
+  metadata: read # Add metadata permission required for artifact actions
 
 jobs:
   test:
