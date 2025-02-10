@@ -307,3 +307,18 @@ def delete_plant(plant_id: int, db: Session = Depends(get_db)) -> dict:
     db.delete(db_plant)
     db.commit()
     return {"status": "success"}
+
+@router.delete("/beds/{bed_id}", response_model=dict)
+def delete_garden_bed(bed_id: int, db: Session = Depends(get_db)) -> dict:
+    """Delete a garden bed and its associated plants."""
+    db_bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
+    if not db_bed:
+        raise HTTPException(status_code=404, detail="Garden bed not found")
+    
+    # Delete associated plants first
+    db.query(DBPlant).filter(DBPlant.bed_id == bed_id).delete()
+    
+    # Delete the bed
+    db.delete(db_bed)
+    db.commit()
+    return {"status": "success"}

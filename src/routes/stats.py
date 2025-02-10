@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from fastapi.responses import JSONResponse
 import pandas as pd
 import plotly.express as px
 import numpy as np
+from sqlalchemy import distinct
 from ..models import GardenStats, PlantStatus, Season, DBPlant, DBGardenBed
 from ..database import get_db
 
@@ -35,13 +37,21 @@ def get_garden_stats(db: Session = Depends(get_db)) -> GardenStats:
 @router.get("/beds/{bed_id}")
 def get_bed_stats(
     bed_id: int,
-    year: int | None = None,
+    year: str | None = Query(default=None),
     db: Session = Depends(get_db)
 ):
     """Get statistics for a specific garden bed."""
     bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
     if not bed:
         raise HTTPException(status_code=404, detail="Garden bed not found")
+
+    # Convert year to int if provided
+    year_int = None
+    if year and year.strip():
+        try:
+            year_int = int(year)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Year must be a valid integer")
 
     # Initialize counts
     total_plants = 0
@@ -52,7 +62,7 @@ def get_bed_stats(
     # Count plants in this bed
     for plant in bed.plants:
         # If year filter is applied, only count plants from that year
-        if year is not None and plant.year != year:
+        if year_int is not None and plant.year != year_int:
             continue
             
         total_plants += plant.quantity
@@ -109,6 +119,32 @@ def get_plants_by_season_chart(db: Session = Depends(get_db)):
     # Convert to dict and handle numpy types
     fig_dict = fig.to_dict()
     return JSONResponse(content=_convert_numpy(fig_dict))
+
+@router.get("/years")
+def get_available_years(db: Session = Depends(get_db)):
+    """Get list of years that have plants, plus current and next year"""
+    current_year = datetime.now().year
+    
+    # First check if there are any garden beds at all
+    if not db.query(DBGardenBed).first():
+        return sorted([current_year, current_year + 1], reverse=True)
+    
+    # Get years from plants that belong to existing beds
+    years = db.query(distinct(DBPlant.year)).\
+        join(DBGardenBed).\
+        filter(DBPlant.bed_id == DBGardenBed.id).\
+        filter(DBPlant.year.isnot(None)).\
+        all()
+
+    # Convert from list of tuples to list of integers, excluding None values
+    plant_years = [year[0] for year in years if year[0] is not None]
+    
+    # Always include current and next year
+    result = set([current_year, current_year + 1])
+    if plant_years:
+        result.update(plant_years)
+    
+    return sorted(result, reverse=True)
 
 def _convert_numpy(obj):
     """Convert numpy types to Python native types for JSON serialization"""

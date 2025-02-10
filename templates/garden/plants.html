@@ -156,18 +156,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupYearFilter() {
     const yearSelect = document.getElementById('year-filter');
-    const currentYear = new Date().getFullYear();
     
-    // Populate years from 2000 to next year
-    for (let year = currentYear + 1; year >= 2000; year--) {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year;
-        if (year === currentYear) {
-            option.selected = true;
-        }
-        yearSelect.appendChild(option);
-    }
+    // Fetch available years from API
+    fetch('/api/stats/years')
+        .then(response => response.json())
+        .then(years => {
+            yearSelect.innerHTML = years.map(year => 
+                `<option value="${year}">${year}</option>`
+            ).join('');
+            
+            // Select current year by default
+            const currentYear = new Date().getFullYear();
+            if (years.includes(currentYear)) {
+                yearSelect.value = currentYear;
+            }
+        });
     
     yearSelect.addEventListener('change', () => loadPlants());
 }

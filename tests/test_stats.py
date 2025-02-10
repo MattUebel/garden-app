@@ -361,3 +361,45 @@ def test_bed_stats_year_comparison(client, test_db):
     
     # Verify total matches sum of all years
     assert data["total_plants"] == sum(year_quantities.values())
+
+def test_get_available_years(client, test_db):
+    """Test retrieving available years for plants"""
+    # Create bed
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    current_year = datetime.now().year
+    
+    # Create plants for different years
+    years = [current_year - 2, current_year - 1, current_year]
+    for year in years:
+        client.post("/api/garden/plants", json={
+            "name": f"Plant {year}",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SUMMER",
+            "year": year,
+            "notes": ""
+        })
+    
+    # Test years endpoint
+    response = client.get("/api/stats/years")
+    assert response.status_code == 200
+    available_years = response.json()
+    
+    # Should include all years with plants plus next year, sorted in descending order
+    expected_years = sorted(years + [current_year + 1], reverse=True)
+    assert available_years == expected_years
+    
+    # Test with no plants
+    client.delete(f"/api/garden/beds/{bed_id}")
+    response = client.get("/api/stats/years")
+    assert response.status_code == 200
+    available_years = response.json()
+    
+    # Should include only current and next year when no plants exist, sorted in descending order
+    assert available_years == sorted([current_year, current_year + 1], reverse=True)

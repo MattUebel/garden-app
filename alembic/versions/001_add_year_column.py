@@ -1,7 +1,7 @@
 """add year column
 
 Revision ID: 001
-Revises: 
+Revises: 000
 Create Date: 2024-02-10
 
 """
@@ -11,7 +11,7 @@ from datetime import datetime
 
 # revision identifiers, used by Alembic.
 revision = '001'
-down_revision = None
+down_revision = '000'
 branch_labels = None
 depends_on = None
 
