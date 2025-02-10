@@ -3,57 +3,81 @@
 # Exit on error
 set -e
 
-echo "Installing system dependencies..."
+echo "Installing Docker and required dependencies..."
 sudo apt update
 sudo apt install -y \
-    python3-pip \
-    python3-venv \
-    postgresql \
-    postgresql-contrib \
-    libpq-dev \
-    gcc \
-    python3-dev \
-    libopenjp2-7 \
-    libtiff5 \
-    libatlas-base-dev \
-    libwebp6 \
-    libjasper1 \
-    libilmbase23 \
-    libopenexr23 \
-    libgstreamer1.0-0 \
-    libavcodec58 \
-    libavformat58 \
-    libswscale5 \
-    libqtgui4 \
-    libqt4-test \
-    libopencv-dev
+    docker.io \
+    docker-compose \
+    cron
 
-echo "Setting up PostgreSQL..."
-sudo -u postgres createuser pi || echo "User 'pi' might already exist"
-sudo -u postgres createdb garden_db || echo "Database 'garden_db' might already exist"
-sudo -u postgres psql -c "ALTER USER pi WITH PASSWORD 'garden_password';" || echo "Password might already be set"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE garden_db TO pi;" || echo "Privileges might already be granted"
+# Start and enable Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
 
-echo "Setting up Python environment..."
-python3 -m venv venv
-source venv/bin/activate
-pip install --upgrade pip wheel setuptools
-pip install -r requirements.txt
+# Add current user to docker group to avoid using sudo
+sudo usermod -aG docker $USER
 
-echo "Creating environment file..."
-if [ ! -f .env ]; then
-    echo "DATABASE_URL=postgresql://pi:garden_password@localhost:5432/garden_db" > .env
-    echo "Created .env file"
-else
-    echo ".env file already exists"
+echo "Creating persistent directories..."
+# Create directories for persistent data
+sudo mkdir -p /var/lib/garden-app/db-data
+sudo mkdir -p /var/lib/garden-app/backups
+
+# Set proper ownership
+sudo chown -R $USER:$USER /var/lib/garden-app
+
+echo "Setting up database backup script..."
+cat << 'EOF' | sudo tee /usr/local/bin/backup-garden-db.sh
+#!/bin/bash
+BACKUP_DIR="/var/lib/garden-app/backups"
+CONTAINER_NAME="garden-app-db-1"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$BACKUP_DIR/garden_db_$TIMESTAMP.sql"
+
+# Check if container is running
+if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "Database container ${CONTAINER_NAME} is not running. Skipping backup."
+    exit 1
 fi
 
+# Create backup
+docker exec $CONTAINER_NAME pg_dump -U postgres garden_db > $BACKUP_FILE
+
+# Keep only last 7 days of backups
+find $BACKUP_DIR -name "garden_db_*.sql" -type f -mtime +7 -delete
+EOF
+
+# Make backup script executable
+sudo chmod +x /usr/local/bin/backup-garden-db.sh
+
+# Add backup cron job - runs daily at 2 AM
+(crontab -l 2>/dev/null; echo "0 2 * * * /usr/local/bin/backup-garden-db.sh") | crontab -
+
 echo "Setting up systemd service..."
-sudo cp scripts/garden-app.service /etc/systemd/system/
+cat << 'EOF' | sudo tee /etc/systemd/system/garden-app.service
+[Unit]
+Description=Garden App Docker Service
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/docker-compose -f /home/pi/garden-app/compose.yaml up
+ExecStop=/usr/bin/docker-compose -f /home/pi/garden-app/compose.yaml down
+WorkingDirectory=/home/pi/garden-app
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Reload systemd and enable service
 sudo systemctl daemon-reload
 sudo systemctl enable garden-app
 sudo systemctl start garden-app
 
 echo "Installation complete!"
-echo "The garden app should now be running at http://localhost:8000"
+echo "The garden app should now be running via Docker"
 echo "View logs with: sudo journalctl -u garden-app -f"
+echo "Manual backup can be triggered with: sudo /usr/local/bin/backup-garden-db.sh"
+echo "Database backups are stored in /var/lib/garden-app/backups"

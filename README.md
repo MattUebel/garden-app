@@ -1,11 +1,11 @@
 # Garden App
 
 [![CI/CD](https://github.com/MattUebel/garden-app/actions/workflows/ci.yml/badge.svg)](https://github.com/MattUebel/garden-app/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/MattUebel/your-gist-id/raw/garden-app-coverage.json)](https://github.com/MattUebel/garden-app/actions/workflows/ci.yml)
 
 A FastAPI-based garden management system that helps track and manage your garden beds, plants, and their growth.
 
 ## Features
+
 - Garden bed management and tracking
 - Plant lifecycle monitoring with yearly tracking
 - Image upload and processing
@@ -14,292 +14,44 @@ A FastAPI-based garden management system that helps track and manage your garden
 - RESTful API endpoints
 - Responsive web interface
 
-## Prerequisites
-- Python 3.11+
-- pip or pipenv
-- Docker (optional)
-- PostgreSQL (if not using Docker)
+## Quick Start
 
-## Getting Started
-
-### Raspberry Pi Setup
-1. Install system dependencies:
-```bash
-sudo apt update
-sudo apt install -y python3-pip python3-venv postgresql postgresql-contrib libpq-dev gcc python3-dev
-```
-
-2. Create and configure PostgreSQL database:
-```bash
-sudo -u postgres createuser pi
-sudo -u postgres createdb garden_db
-sudo -u postgres psql
-    ALTER USER pi WITH PASSWORD 'your_password';
-    GRANT ALL PRIVILEGES ON DATABASE garden_db TO pi;
-```
-
-3. Clone and set up the application:
-```bash
-git clone git@github.com:MattUebel/garden-app.git
-cd garden-app
-python3 -m venv venv
-source venv/bin/activate
-pip install wheel  # Install wheel first to help with binary dependencies
-pip install -r requirements.txt
-```
-
-4. Create a .env file:
-```bash
-DATABASE_URL=postgresql://pi:your_password@localhost:5432/garden_db
-```
-
-5. Run the application:
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-6. (Optional) Set up as a system service:
-```bash
-# Copy the service file
-sudo cp scripts/garden-app.service /etc/systemd/system/
-sudo systemctl daemon-reload
-
-# Start the service
-sudo systemctl start garden-app
-
-# Enable at boot
-sudo systemctl enable garden-app
-
-# Check status
-sudo systemctl status garden-app
-```
-
-You can view the logs using:
-```bash
-sudo journalctl -u garden-app -f
-```
-
-The application will be available at `http://<raspberry-pi-ip>:8000`
-
-> Note: For running on Raspberry Pi, we recommend using the local installation method rather than Docker due to better ARM processor support and reduced overhead.
+### Prerequisites
+- Docker and Docker Compose V2
+- Git
 
 ### Local Development
+
 1. Clone the repository:
 ```bash
 git clone git@github.com:MattUebel/garden-app.git
 cd garden-app
 ```
 
-2. Set up your environment:
+2. Start the development environment:
 ```bash
-# Using pip
-python -m venv venv
-source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-pip install -r requirements.txt
-pip install -r dev-requirements.txt  # For development tools
-
-# Or using pipenv
-pipenv install
-pipenv shell
+docker compose up
 ```
 
-3. Set up environment variables (create a .env file):
-```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/garden_db
-```
+The application will be available at http://localhost:8000. The development server will automatically reload when you make changes to the code.
 
-4. Run the application:
-```bash
-uvicorn main:app --reload
-```
+> Note: Database data is persisted in a Docker volume named "garden-app-db-data". The development database is accessible on port 5432 with username "garden_user" and password "garden_password" if you need to connect directly.
 
-### Using Docker
-1. Build and run with Docker:
-```bash
-# Using Docker Compose V2 (recommended)
-docker compose up --build
+## Documentation
 
-# Or using individual commands
-docker build -t garden-app .
-docker run -p 8000:8000 garden-app
-```
-
-The application will be available at http://localhost:8000
-
-> Note: This project uses Docker Compose V2. The `docker-compose` command (with a hyphen) is legacy and has been replaced by `docker compose` in modern Docker installations.
+- [Development Guide](docs/development-guide.md)
+- [Testing Guide](docs/testing-guide.md)
+- [Azure Deployment Guide](docs/azure-deployment.md)
+- [Raspberry Pi Deployment Guide](docs/raspberry-pi-deployment.md)
 
 ## API Documentation
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-
-## Development
-
-### Project Structure
-```
-garden-app/
-├── main.py              # Application entry point
-├── requirements.txt     # Production dependencies
-├── dev-requirements.txt # Development dependencies
-├── Dockerfile          # Docker configuration
-├── compose.yaml        # Docker Compose V2 configuration
-├── src/               # Source code modules
-│   ├── database.py    # Database configuration
-│   ├── models.py      # Database models
-│   └── routes/        # API route handlers
-│       ├── frontend.py
-│       ├── garden.py
-│       ├── images.py
-│       └── stats.py
-├── static/            # Static assets
-│   ├── css/
-│   └── js/
-├── templates/         # HTML templates
-│   ├── base.html
-│   └── garden/
-└── tests/            # Test files
-```
-
-### Running Tests
-```bash
-pytest
-```
-
-### Code Style
-The project follows PEP 8 guidelines. To maintain code quality:
-
-1. Install development dependencies:
-```bash
-pip install -r dev-requirements.txt
-```
-
-2. Run linting:
-```bash
-flake8
-```
-
-3. Run type checking:
-```bash
-mypy .
-```
-
-## Testing
-
-### Running Tests Locally
-
-The project uses pytest with PostgreSQL for testing. You can run tests in several ways:
-
-```bash
-# Run all tests
-./scripts/run-tests-local.sh
-
-# Run with coverage report
-./scripts/run-tests-local.sh -c
-
-# Run specific test file
-./scripts/run-tests-local.sh tests/test_plants.py
-
-# Run tests in watch mode (useful during development)
-./scripts/run-tests-local.sh -w
-
-# Run with verbose output
-./scripts/run-tests-local.sh -v
-```
-
-### Test Configuration
-
-Tests use a dedicated PostgreSQL database specified by the `DATABASE_URL` environment variable. The test infrastructure:
-- Creates fresh database tables for each test
-- Provides fixtures for database sessions, FastAPI test client, and file storage mocking
-- Automatically cleans up after each test
-- Handles transaction rollbacks for failed tests
-
-### Test Organization
-
-Tests are organized by feature:
-- `test_garden_beds.py`: Garden bed management tests
-- `test_plants.py`: Plant management and image upload tests
-- `test_stats.py`: Statistics and analytics tests
-- `test_main.py`: Core application tests
-
-### Coverage Requirements
-
-- Minimum coverage threshold: 85%
-- Branch coverage is enabled
-- Coverage reports are generated in multiple formats:
-  - HTML report: `coverage/html/index.html`
-  - XML report: `coverage/coverage.xml`
-  - JSON report: `coverage/coverage.json`
-  - Terminal summary
-  - JUnit XML report: `coverage/junit.xml`
-
-### CI/CD Pipeline
-
-The test suite runs in GitHub Actions:
-- Tests run in Docker for consistent environments
-- Coverage reports are uploaded as artifacts
-- Coverage badge is automatically updated
-- PR comments show coverage changes
-- Tests must pass before deployment
-
-### Writing New Tests
-
-When adding new features:
-1. Create test file in `tests/` directory
-2. Use fixtures from `conftest.py` for database and client setup
-3. Follow existing patterns for API testing
-4. Ensure error cases are covered
-5. Run tests locally with coverage to verify
-
-## Cloud Deployment
-
-### Azure Deployment Options
-
-1. **Azure App Service (Recommended)**
-   - Supports Python web apps with built-in CI/CD
-   - Easy scaling and monitoring
-   - Deploy using:
-   ```bash
-   az webapp up --runtime PYTHON:3.11 --sku B1 --name your-garden-app
-   ```
-
-2. **Azure Container Apps**
-   - Containerized deployment using existing Docker setup
-   - Serverless container runtime with auto-scaling
-   - Deploy using:
-   ```bash
-   # Build and push to Azure Container Registry
-   docker build -t your-acr.azurecr.io/garden-app:latest .
-   docker push your-acr.azurecr.io/garden-app:latest
-   
-   # Deploy to Container Apps
-   az containerapp up --name your-garden-app --resource-group your-rg --image your-acr.azurecr.io/garden-app:latest
-   ```
-
-3. **Azure Kubernetes Service (AKS)**
-   - For larger scale deployments
-   - Full container orchestration
-   - Use existing docker-compose.yml with Docker Desktop's Kubernetes
-
-### Required Azure Resources
-- Azure Database for PostgreSQL
-- Azure Storage Account (for image storage)
-- Azure Container Registry (if using containers)
-
-### Environment Configuration
-Add these to your Azure App Service Configuration:
-```
-DATABASE_URL=postgresql://<user>:<password>@<server-name>.postgres.database.azure.com:5432/garden_db
-AZURE_STORAGE_CONNECTION_STRING=<your-storage-connection-string>
-```
-
-For detailed Azure deployment instructions, see our [Azure Deployment Guide](docs/azure-deployment.md)
+- Swagger UI: http://localhost:8000/api/docs
+- ReDoc: http://localhost:8000/api/redoc
 
 ## Contributing
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and ensure they pass
-5. Submit a pull request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
+
 This project is licensed under the MIT License.

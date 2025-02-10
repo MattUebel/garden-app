@@ -35,6 +35,7 @@ services:
       start_period: 40s
       
   db:
+    container_name: garden-app-db
     image: postgres:15-alpine
     volumes:
       - postgres_data:/var/lib/postgresql/data
