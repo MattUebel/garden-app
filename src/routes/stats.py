@@ -33,7 +33,11 @@ def get_garden_stats(db: Session = Depends(get_db)) -> GardenStats:
     )
 
 @router.get("/beds/{bed_id}")
-def get_bed_stats(bed_id: int, db: Session = Depends(get_db)):
+def get_bed_stats(
+    bed_id: int,
+    year: int | None = None,
+    db: Session = Depends(get_db)
+):
     """Get statistics for a specific garden bed."""
     bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
     if not bed:
@@ -43,14 +47,20 @@ def get_bed_stats(bed_id: int, db: Session = Depends(get_db)):
     total_plants = 0
     plants_by_status = {status.value: 0 for status in PlantStatus}
     plants_by_season = {season.value: 0 for season in Season}
+    plants_by_year = {}
 
     # Count plants in this bed
     for plant in bed.plants:
+        # If year filter is applied, only count plants from that year
+        if year is not None and plant.year != year:
+            continue
+            
         total_plants += plant.quantity
         plants_by_status[plant.status] += plant.quantity
         plants_by_season[plant.season] += plant.quantity
+        plants_by_year[plant.year] = plants_by_year.get(plant.year, 0) + plant.quantity
 
-    # Calculate space utilization (if required by frontend)
+    # Calculate space utilization
     try:
         dimensions = bed.dimensions.split('x')
         total_space = int(dimensions[0]) * int(dimensions[1])
@@ -64,6 +74,7 @@ def get_bed_stats(bed_id: int, db: Session = Depends(get_db)):
         "total_plants": total_plants,
         "plants_by_status": plants_by_status,
         "plants_by_season": plants_by_season,
+        "plants_by_year": plants_by_year,
         "space_utilization": space_utilization
     }
 

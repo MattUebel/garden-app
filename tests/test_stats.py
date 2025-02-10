@@ -1,6 +1,6 @@
 """Tests for garden statistics functionality."""
 import pytest
-from datetime import date
+from datetime import date, datetime
 from fastapi.testclient import TestClient
 
 def test_get_garden_stats(client, test_db):
@@ -275,3 +275,89 @@ def test_bed_stats_nonexistent_bed(client, test_db):
     response = client.get("/api/stats/beds/999")
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
+
+def test_bed_stats_by_year(client, test_db):
+    """Test bed statistics filtering by year"""
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Stats Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    current_year = datetime.now().year
+    
+    # Create plants for different years
+    for year in [current_year - 1, current_year]:
+        client.post("/api/garden/plants", json={
+            "name": f"Plant {year}",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SUMMER",
+            "year": year,
+            "quantity": 2,
+            "notes": ""
+        })
+    
+    # Test current year stats
+    response = client.get(f"/api/stats/beds/{bed_id}?year={current_year}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_plants"] == 2
+    assert data["plants_by_year"][str(current_year)] == 2
+    
+    # Test previous year stats
+    response = client.get(f"/api/stats/beds/{bed_id}?year={current_year - 1}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_plants"] == 2
+    assert data["plants_by_year"][str(current_year - 1)] == 2
+    
+    # Test all years (no year filter)
+    response = client.get(f"/api/stats/beds/{bed_id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_plants"] == 4
+    assert data["plants_by_year"][str(current_year)] == 2
+    assert data["plants_by_year"][str(current_year - 1)] == 2
+
+def test_bed_stats_year_comparison(client, test_db):
+    """Test the year-over-year comparison in bed statistics"""
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Stats Test Bed",
+        "dimensions": "3x6",
+        "notes": ""
+    })
+    bed_id = bed_response.json()["id"]
+    current_year = datetime.now().year
+    
+    # Create plants across multiple years with different quantities
+    year_quantities = {
+        current_year - 2: 1,
+        current_year - 1: 3,
+        current_year: 2
+    }
+    
+    for year, quantity in year_quantities.items():
+        client.post("/api/garden/plants", json={
+            "name": f"Plant {year}",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "SUMMER",
+            "year": year,
+            "quantity": quantity,
+            "notes": ""
+        })
+    
+    # Test year comparison data
+    response = client.get(f"/api/stats/beds/{bed_id}")
+    assert response.status_code == 200
+    data = response.json()
+    
+    # Verify year-specific plant counts
+    for year, expected_quantity in year_quantities.items():
+        assert data["plants_by_year"][str(year)] == expected_quantity
+    
+    # Verify total matches sum of all years
+    assert data["total_plants"] == sum(year_quantities.values())

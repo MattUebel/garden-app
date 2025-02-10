@@ -28,4 +28,9 @@ services:
       - COVERAGE_FILE=/app/coverage/.coverage
     volumes:
       - ./coverage:/app/coverage:rw
+      - ./scripts:/app/scripts:ro
+      - ./alembic:/app/alembic:ro
+      - ./alembic.ini:/app/alembic.ini:ro
+    entrypoint: ["/app/scripts/entrypoint.sh"]
+    command: ["pytest", "-v", "--cov=src", "--cov-report=html:/app/coverage"]
     user: nobody

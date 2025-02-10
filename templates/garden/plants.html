@@ -54,13 +54,18 @@
     <div class="col-md-8">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2>Plants</h2>
-            <select class="form-select w-auto" id="season-filter">
-                <option value="">All Seasons</option>
-                <option value="spring">Spring</option>
-                <option value="summer">Summer</option>
-                <option value="fall">Fall</option>
-                <option value="winter">Winter</option>
-            </select>
+            <div class="d-flex gap-2">
+                <select class="form-select w-auto" id="year-filter">
+                    <!-- Years will be populated in JavaScript -->
+                </select>
+                <select class="form-select w-auto" id="season-filter">
+                    <option value="">All Seasons</option>
+                    <option value="SPRING">Spring 🌷</option>
+                    <option value="SUMMER">Summer ☀️</option>
+                    <option value="FALL">Fall 🍂</option>
+                    <option value="WINTER">Winter ❄️</option>
+                </select>
+            </div>
         </div>
         <div id="plants-list" class="row g-4">
             <!-- Plants will be loaded here -->
@@ -142,11 +147,30 @@ const SEASON_EMOJIS = {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
+    setupYearFilter();
     loadGardenBeds();
     loadPlants();
     setupPlantForm();
     setupSeasonFilter();
 });
+
+function setupYearFilter() {
+    const yearSelect = document.getElementById('year-filter');
+    const currentYear = new Date().getFullYear();
+    
+    // Populate years from 2000 to next year
+    for (let year = currentYear + 1; year >= 2000; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    yearSelect.addEventListener('change', () => loadPlants());
+}
 
 function loadGardenBeds() {
     fetch('/api/garden/beds')
@@ -159,12 +183,23 @@ function loadGardenBeds() {
         });
 }
 
-function loadPlants(season = '') {
-    const url = season ? `/api/garden/plants?season=${season}` : '/api/garden/plants';
+function loadPlants() {
+    const year = document.getElementById('year-filter').value;
+    const season = document.getElementById('season-filter').value;
+    const url = new URL('/api/garden/plants', window.location.origin);
+    if (season) url.searchParams.append('season', season);
+    if (year) url.searchParams.append('year', year);
+    
     fetch(url)
         .then(response => response.json())
         .then(plants => {
             const container = document.getElementById('plants-list');
+            
+            if (plants.length === 0) {
+                container.innerHTML = '<p>No plants found for the selected filters.</p>';
+                return;
+            }
+
             container.innerHTML = plants.map(plant => `
                 <div class="col-md-6">
                     <div class="card h-100">
@@ -196,7 +231,9 @@ function loadPlants(season = '') {
                                 <span class="badge season-badge season-${plant.season}">
                                     ${SEASON_EMOJIS[plant.season]} ${plant.season}
                                 </span><br>
-                                <strong>Planted:</strong> ${new Date(plant.planting_date).toLocaleDateString()}<br>
+                                <strong>Location:</strong> ${plant.location}<br>
+                                <strong>Year:</strong> ${plant.year}<br>
+                                <strong>Planted:</strong> ${formatDate(plant.planting_date)}<br>
                                 ${plant.variety ? `<strong>Variety:</strong> ${plant.variety}<br>` : ''}
                                 ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
                             </p>
@@ -232,8 +269,11 @@ function setupPlantForm() {
         e.preventDefault();
         const formData = new FormData(form);
         const data = Object.fromEntries(formData.entries());
-        data.status = 'PLANTED';  // Initial status
-        data.season = data.season.toUpperCase(); // Convert season to uppercase
+        
+        // Add year and format dates
+        data.status = 'PLANTED';
+        data.quantity = parseInt(data.quantity);
+        data.year = parseInt(document.getElementById('year-filter').value);
         data.planting_date = new Date(data.planting_date).toISOString();
         if (data.expected_harvest_date) {
             data.expected_harvest_date = new Date(data.expected_harvest_date).toISOString();
@@ -249,15 +289,18 @@ function setupPlantForm() {
         .then(response => response.json())
         .then(() => {
             form.reset();
-            loadPlants(document.getElementById('season-filter').value);
-        });
+            document.getElementById('planting_date').valueAsDate = new Date();
+            showNotification('Plant added successfully');
+            loadPlants();
+        })
+        .catch(handleApiError);
     });
 }
 
 function setupSeasonFilter() {
     const filter = document.getElementById('season-filter');
     filter.addEventListener('change', function() {
-        loadPlants(this.value);
+        loadPlants();
     });
 }
 
@@ -271,7 +314,7 @@ function updatePlantStatus(plantId, newStatus) {
     })
     .then(response => response.json())
     .then(() => {
-        loadPlants(document.getElementById('season-filter').value);
+        loadPlants();
     });
 }
 
@@ -294,7 +337,7 @@ function openPhotoUpload(plantId) {
             .then(response => response.json())
             .then(() => {
                 showNotification('Photo uploaded successfully');
-                loadPlants(document.getElementById('season-filter').value);
+                loadPlants();
             })
             .catch(handleApiError);
         }
@@ -348,7 +391,7 @@ function submitEditPlantForm() {
     .then(() => {
         document.getElementById('editPlantModal').querySelector('[data-bs-dismiss="modal"]').click();
         showNotification('Plant updated successfully');
-        loadPlants(document.getElementById('season-filter').value);
+        loadPlants();
     })
     .catch(handleApiError);
 }
@@ -363,7 +406,7 @@ function deletePlant() {
         .then(() => {
             document.getElementById('editPlantModal').querySelector('[data-bs-dismiss="modal"]').click();
             showNotification('Plant deleted successfully');
-            loadPlants(document.getElementById('season-filter').value);
+            loadPlants();
         })
         .catch(handleApiError);
     }

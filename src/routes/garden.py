@@ -156,6 +156,7 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         bed_id=bed_id,
         status=plant.status.value,
         season=plant.season.value,
+        year=plant.year,
         quantity=plant.quantity,
         expected_harvest_date=plant.expected_harvest_date,
         notes=plant.notes
@@ -172,16 +173,23 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         location=f"Bed {bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        year=db_plant.year,
         quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes
     )
 
 @router.get("/plants", response_model=list[Plant])
-def list_plants(season: Season | None = None, db: Session = Depends(get_db)) -> list[Plant]:
+def list_plants(
+    season: Season | None = None,
+    year: int | None = None,
+    db: Session = Depends(get_db)
+) -> list[Plant]:
     query = db.query(DBPlant)
     if season:
         query = query.filter(DBPlant.season == season.value)
+    if year:
+        query = query.filter(DBPlant.year == year)
     
     db_plants = query.all()
     return [
@@ -193,6 +201,7 @@ def list_plants(season: Season | None = None, db: Session = Depends(get_db)) -> 
             location=f"Bed {p.bed_id}",
             status=PlantStatus(p.status),
             season=Season(p.season),
+            year=p.year,
             quantity=p.quantity,
             expected_harvest_date=p.expected_harvest_date,
             notes=p.notes
@@ -251,6 +260,7 @@ def update_plant_status(
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        year=db_plant.year or datetime.now().year,  # Default to current year if not set
         quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes

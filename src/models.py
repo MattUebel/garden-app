@@ -1,7 +1,7 @@
 from typing import Optional, List
 from datetime import datetime, date
 from enum import Enum
-from pydantic import BaseModel, HttpUrl, validator
+from pydantic import BaseModel, HttpUrl, validator, Field
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from .database import Base
@@ -44,6 +44,7 @@ class Plant(BaseModel):
     location: str  # Location in garden
     status: PlantStatus
     season: Season
+    year: Optional[int] = Field(default_factory=lambda: datetime.now().year)  # Default to current year
     quantity: int = 1
     expected_harvest_date: Optional[datetime] = None
     images: List[PlantImage] = []
@@ -63,6 +64,13 @@ class Plant(BaseModel):
     def validate_quantity(cls, v):
         if v < 1:
             raise ValueError('Quantity must be at least 1')
+        return v
+
+    @validator('year')
+    def validate_year(cls, v):
+        current_year = datetime.now().year
+        if v < 2000 or v > current_year + 1:  # Allow planning for next year
+            raise ValueError(f'Year must be between 2000 and {current_year + 1}')
         return v
 
 class GardenBed(BaseModel):
@@ -103,6 +111,7 @@ class DBPlant(Base):
     bed_id = sa.Column(sa.Integer, sa.ForeignKey("garden_beds.id"))
     status = sa.Column(sa.String)
     season = sa.Column(sa.String)
+    year = sa.Column(sa.Integer)  # New column
     quantity = sa.Column(sa.Integer, default=1)
     expected_harvest_date = sa.Column(sa.DateTime, nullable=True)
     notes = sa.Column(sa.String, nullable=True)

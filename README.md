@@ -7,10 +7,10 @@ A FastAPI-based garden management system that helps track and manage your garden
 
 ## Features
 - Garden bed management and tracking
-- Plant lifecycle monitoring
+- Plant lifecycle monitoring with yearly tracking
 - Image upload and processing
 - Barcode scanning support
-- Garden statistics and visualization
+- Garden statistics and visualization, including year-over-year comparisons
 - RESTful API endpoints
 - Responsive web interface
 

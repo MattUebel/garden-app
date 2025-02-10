@@ -17,9 +17,14 @@
     <div class="col-md-8 mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h3>Plants in this Bed</h3>
-            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPlantModal">
-                <i class="bi bi-plus-circle"></i> Add Plant
-            </button>
+            <div class="d-flex gap-2">
+                <select class="form-select" id="year-filter" style="width: auto;">
+                    <!-- Years will be populated in JavaScript -->
+                </select>
+                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addPlantModal">
+                    <i class="bi bi-plus-circle"></i> Add Plant
+                </button>
+            </div>
         </div>
         <div id="bed-plants" class="row g-4">
             <!-- Plants will be loaded here -->
@@ -35,6 +40,9 @@
                 </div>
                 <div id="status-chart" class="mt-4">
                     <!-- Status distribution chart will be loaded here -->
+                </div>
+                <div id="year-comparison-chart" class="mt-4">
+                    <!-- Year comparison chart will be loaded here -->
                 </div>
             </div>
         </div>
@@ -201,6 +209,7 @@ const SEASON_EMOJIS = {
 
 document.addEventListener('DOMContentLoaded', function() {
     const bedId = parseInt('{{ bed_id }}');
+    setupYearFilter();
     loadBedDetails(bedId);
     loadBedPlants(bedId);
     loadBedStats(bedId);
@@ -208,6 +217,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set today as default planting date
     document.getElementById('planting_date').valueAsDate = new Date();
 });
+
+function setupYearFilter() {
+    const yearSelect = document.getElementById('year-filter');
+    const currentYear = new Date().getFullYear();
+    
+    // Populate years from 2000 to next year
+    for (let year = currentYear + 1; year >= 2000; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        if (year === currentYear) {
+            option.selected = true;
+        }
+        yearSelect.appendChild(option);
+    }
+    
+    yearSelect.addEventListener('change', function() {
+        const bedId = parseInt('{{ bed_id }}');
+        loadBedPlants(bedId);
+        loadBedStats(bedId);
+    });
+}
 
 function loadBedDetails(bedId) {
     fetch(`/api/garden/beds/${bedId}`)
@@ -233,14 +264,15 @@ function loadBedDetails(bedId) {
 }
 
 function loadBedPlants(bedId) {
-    fetch('/api/garden/plants')
+    const year = document.getElementById('year-filter').value;
+    fetch(`/api/garden/plants?year=${year}`)
         .then(response => response.json())
         .then(plants => {
             const bedPlants = plants.filter(p => p.location === `Bed ${bedId}`);
             const container = document.getElementById('bed-plants');
             
             if (bedPlants.length === 0) {
-                container.innerHTML = '<p>No plants in this bed yet.</p>';
+                container.innerHTML = '<p>No plants in this bed for the selected year.</p>';
                 return;
             }
 
@@ -275,6 +307,7 @@ function loadBedPlants(bedId) {
                                 <span class="badge season-badge season-${plant.season}">
                                     ${SEASON_EMOJIS[plant.season]} ${plant.season}
                                 </span><br>
+                                <strong>Year:</strong> ${plant.year}<br>
                                 <strong>Planted:</strong> ${formatDate(plant.planting_date)}<br>
                                 ${plant.variety ? `<strong>Variety:</strong> ${plant.variety}<br>` : ''}
                                 ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
@@ -306,12 +339,13 @@ function loadBedPlants(bedId) {
 }
 
 function loadBedStats(bedId) {
-    fetch(`/api/stats/beds/${bedId}`)
+    const year = document.getElementById('year-filter').value;
+    fetch(`/api/stats/beds/${bedId}?year=${year}`)
         .then(response => response.json())
         .then(stats => {
             const container = document.getElementById('bed-stats');
             container.innerHTML = `
-                <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
+                <p><strong>Total Plants (${year}):</strong> ${stats.total_plants}</p>
                 <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
             `;
 
@@ -326,8 +360,26 @@ function loadBedStats(bedId) {
             Plotly.newPlot('status-chart', [statusData], {
                 height: 300,
                 margin: { t: 30, b: 30, l: 30, r: 30 },
-                title: 'Status Distribution'
+                title: `Status Distribution (${year})`
             });
+
+            // Create year comparison chart if there's data for multiple years
+            if (Object.keys(stats.plants_by_year).length > 0) {
+                const yearData = {
+                    x: Object.keys(stats.plants_by_year),
+                    y: Object.values(stats.plants_by_year),
+                    type: 'bar',
+                    name: 'Plants by Year'
+                };
+                
+                Plotly.newPlot('year-comparison-chart', [yearData], {
+                    height: 300,
+                    margin: { t: 30, b: 30, l: 30, r: 30 },
+                    title: 'Year-over-Year Comparison',
+                    xaxis: { title: 'Year' },
+                    yaxis: { title: 'Number of Plants' }
+                });
+            }
         });
 }
 
@@ -389,6 +441,7 @@ function submitQuickPlantForm() {
     const bedId = parseInt('{{ bed_id }}');
     data.location = 'Bed ' + bedId;
     data.quantity = parseInt(data.quantity);
+    data.year = parseInt(document.getElementById('year-filter').value);
     data.planting_date = new Date(data.planting_date).toISOString();
     if (data.expected_harvest_date) {
         data.expected_harvest_date = new Date(data.expected_harvest_date).toISOString();
