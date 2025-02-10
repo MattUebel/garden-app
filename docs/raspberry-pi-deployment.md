@@ -1,97 +1,93 @@
 # Raspberry Pi Deployment Guide
 
-This guide explains how to deploy the Garden App on a Raspberry Pi, either directly or using Docker.
+This guide explains how to deploy the Garden App on a Raspberry Pi using our automated setup script.
 
-## Direct Installation
+## Quick Start
 
-### 1. System Dependencies
-```bash
-sudo apt update
-sudo apt install -y python3-pip python3-venv postgresql postgresql-contrib libpq-dev gcc python3-dev
-```
-
-### 2. Database Setup
-```bash
-sudo -u postgres createuser pi
-sudo -u postgres createdb garden_db
-sudo -u postgres psql
-    ALTER USER pi WITH PASSWORD 'your_password';
-    GRANT ALL PRIVILEGES ON DATABASE garden_db TO pi;
-```
-
-### 3. Application Setup
+1. Clone the repository:
 ```bash
 git clone git@github.com:MattUebel/garden-app.git
 cd garden-app
-python3 -m venv venv
-source venv/bin/activate
-pip install wheel  # Install wheel first to help with binary dependencies
-pip install -r requirements.txt
 ```
 
-### 4. Environment Configuration
-Create a .env file:
+2. Run the setup script:
 ```bash
-DATABASE_URL=postgresql://pi:your_password@localhost:5432/garden_db
+./scripts/setup-raspberry-pi.sh
 ```
 
-### 5. Running as a Service
+That's it! The script handles everything else automatically.
+
+## What the Setup Script Does
+
+The setup script automates the entire deployment process:
+
+1. Installs required dependencies:
+   - Docker and Docker Compose
+   - Cron for scheduled backups
+
+2. Sets up persistent storage:
+   - Creates `/var/lib/garden-app/db-data` for database files
+   - Creates `/var/lib/garden-app/backups` for database backups
+
+3. Configures automated backups:
+   - Creates a backup script at `/usr/local/bin/backup-garden-db.sh`
+   - Sets up daily backups at 2 AM
+   - Maintains a 7-day backup history
+
+4. Installs and starts the system service:
+   - Creates a systemd service for automatic startup
+   - Enables and starts the service
+
+## Monitoring Your Deployment
+
+After installation, you can:
+
+1. Check the service status:
 ```bash
-# Copy the service file
-sudo cp scripts/garden-app.service /etc/systemd/system/
-sudo systemctl daemon-reload
-
-# Start and enable the service
-sudo systemctl start garden-app
-sudo systemctl enable garden-app
+sudo systemctl status garden-app
 ```
 
-You can view the logs using:
+2. View application logs:
 ```bash
 sudo journalctl -u garden-app -f
 ```
 
-## Docker Deployment
-
-### 1. Install Docker
+3. Check running containers:
 ```bash
-# Use our setup script
-curl -fsSL https://raw.githubusercontent.com/MattUebel/garden-app/main/scripts/setup-raspberry-pi.sh | bash
+docker ps
 ```
 
-This script will:
-- Install Docker and Docker Compose
-- Set up automatic database backups
-- Create required directories
-- Configure the system service
+## Database Backups
 
-### 2. Persistent Data
-The setup script creates these directories:
-- `/var/lib/garden-app/db-data`: Database storage
-- `/var/lib/garden-app/backups`: Daily database backups
+Backups are handled automatically, but you can:
 
-### 3. Database Backups
-- Automatic daily backups at 2 AM
-- Keeps last 7 days of backups
-- Manual backup: `sudo /usr/local/bin/backup-garden-db.sh`
+- Trigger a manual backup:
+```bash
+sudo /usr/local/bin/backup-garden-db.sh
+```
 
-### 4. Monitoring
-- Check service status: `sudo systemctl status garden-app`
-- View logs: `sudo journalctl -u garden-app -f`
-- Check Docker containers: `docker ps`
-
-## Performance Considerations
-
-> Note: For running on Raspberry Pi, we recommend using the direct installation method rather than Docker due to better ARM processor support and reduced overhead.
+- Find backup files in `/var/lib/garden-app/backups`
+- Backups are automatically pruned after 7 days
 
 ## Troubleshooting
 
 1. If the service fails to start:
    - Check logs: `sudo journalctl -u garden-app -f`
-   - Verify database connection
-   - Ensure proper file permissions
+   - Verify Docker is running: `sudo systemctl status docker`
+   - Ensure proper file permissions in `/var/lib/garden-app`
 
 2. If database backup fails:
    - Check container is running: `docker ps`
    - Verify backup directory permissions
-   - Check available disk space
+   - Check available disk space: `df -h`
+
+3. For permission issues:
+   - Verify your user is in the docker group: `groups`
+   - If not, log out and back in after the setup script runs
+
+## Additional Resources
+
+- [Docker Documentation](https://docs.docker.com/)
+- [Raspberry Pi Documentation](https://www.raspberrypi.org/documentation/)
+
+For additional support, please open an issue in the GitHub repository.
