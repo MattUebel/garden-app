@@ -235,3 +235,33 @@ def test_update_plant_with_invalid_data(client, test_db):
     }
     response = client.patch(f"/api/garden/plants/{plant_id}", json=update_data)
     assert response.status_code == 422
+
+def test_garden_bed_with_plant_space(client, test_db):
+    """Test that plant space requirements are included when getting garden bed details"""
+    # Create a garden bed
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": "Test notes"
+    })
+    bed_id = bed_response.json()["id"]
+    
+    # Create a plant with specific space requirements
+    plant_response = client.post("/api/garden/plants", json={
+        "name": "Tomato",
+        "variety": "Roma",
+        "planting_date": str(date.today()),
+        "location": f"Bed {bed_id}",
+        "status": "PLANTED",
+        "season": "SUMMER",
+        "space_required": 16,
+        "notes": "Test plant"
+    })
+    assert plant_response.status_code == 200
+    
+    # Get the garden bed and verify plant space is included
+    bed_detail_response = client.get(f"/api/garden/beds/{bed_id}")
+    assert bed_detail_response.status_code == 200
+    data = bed_detail_response.json()
+    assert len(data["plants"]) == 1
+    assert data["plants"][0]["space_required"] == 16

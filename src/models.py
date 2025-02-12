@@ -46,6 +46,7 @@ class Plant(BaseModel):
     season: Season
     year: Optional[int] = Field(default_factory=lambda: datetime.now().year)  # Default to current year
     quantity: int = 1
+    space_required: Optional[int] = Field(default=4, description="Space required per plant in square inches")
     expected_harvest_date: Optional[datetime] = None
     images: List[PlantImage] = []
     notes: Optional[str] = None
@@ -113,6 +114,7 @@ class DBPlant(Base):
     season = sa.Column(sa.String)
     year = sa.Column(sa.Integer)  # New column
     quantity = sa.Column(sa.Integer, default=1)
+    space_required = sa.Column(sa.Integer, default=4)
     expected_harvest_date = sa.Column(sa.DateTime, nullable=True)
     notes = sa.Column(sa.String, nullable=True)
     garden_bed = relationship("DBGardenBed", back_populates="plants")

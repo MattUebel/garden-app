@@ -44,7 +44,7 @@ def get_bed_stats(
     bed = db.query(DBGardenBed).filter(DBGardenBed.id == bed_id).first()
     if not bed:
         raise HTTPException(status_code=404, detail="Garden bed not found")
-
+    
     # Convert year to int if provided
     year_int = None
     if year and year.strip():
@@ -52,13 +52,14 @@ def get_bed_stats(
             year_int = int(year)
         except ValueError:
             raise HTTPException(status_code=422, detail="Year must be a valid integer")
-
+    
     # Initialize counts
     total_plants = 0
+    total_space_used = 0
     plants_by_status = {status.value: 0 for status in PlantStatus}
     plants_by_season = {season.value: 0 for season in Season}
     plants_by_year = {}
-
+    
     # Count plants in this bed
     for plant in bed.plants:
         # If year filter is applied, only count plants from that year
@@ -66,22 +67,24 @@ def get_bed_stats(
             continue
             
         total_plants += plant.quantity
+        total_space_used += plant.quantity * plant.space_required
         plants_by_status[plant.status] += plant.quantity
         plants_by_season[plant.season] += plant.quantity
         plants_by_year[plant.year] = plants_by_year.get(plant.year, 0) + plant.quantity
-
+    
     # Calculate space utilization
     try:
         dimensions = bed.dimensions.split('x')
-        total_space = int(dimensions[0]) * int(dimensions[1])
-        space_utilization = f"{(total_plants / total_space) * 100:.1f}%"
+        total_bed_space = int(dimensions[0]) * int(dimensions[1])
+        space_utilization = f"{(total_space_used / total_bed_space) * 100:.1f}%"
     except (IndexError, ValueError):
         space_utilization = "N/A"
-
+    
     return {
         "bed_name": bed.name,
         "dimensions": bed.dimensions,
         "total_plants": total_plants,
+        "total_space_used": total_space_used,
         "plants_by_status": plants_by_status,
         "plants_by_season": plants_by_season,
         "plants_by_year": plants_by_year,

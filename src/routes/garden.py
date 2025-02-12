@@ -62,7 +62,8 @@ def list_garden_beds(db: Session = Depends(get_db)) -> list[GardenBed]:
                         status=PlantStatus(p.status),
                         season=Season(p.season),
                         expected_harvest_date=p.expected_harvest_date,
-                        notes=p.notes
+                        notes=p.notes,
+                        space_required=p.space_required
                     )
                     for p in bed.plants
                 ]
@@ -92,6 +93,9 @@ def get_garden_bed(bed_id: int, db: Session = Depends(get_db)) -> GardenBed:
                 location=f"Bed {db_bed.id}",
                 status=PlantStatus(p.status),
                 season=Season(p.season),
+                year=p.year,
+                quantity=p.quantity,
+                space_required=p.space_required,
                 expected_harvest_date=p.expected_harvest_date,
                 notes=p.notes
             )
@@ -127,7 +131,8 @@ def update_garden_bed(bed_id: int, garden_bed: GardenBed, db: Session = Depends(
                 status=PlantStatus(p.status),
                 season=Season(p.season),
                 expected_harvest_date=p.expected_harvest_date,
-                notes=p.notes
+                notes=p.notes,
+                space_required=p.space_required
             )
             for p in db_bed.plants
         ]
@@ -158,6 +163,7 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         season=plant.season.value,
         year=plant.year,
         quantity=plant.quantity,
+        space_required=plant.space_required,
         expected_harvest_date=plant.expected_harvest_date,
         notes=plant.notes
     )
@@ -175,8 +181,10 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         season=Season(db_plant.season),
         year=db_plant.year,
         quantity=db_plant.quantity,
+        space_required=db_plant.space_required,
         expected_harvest_date=db_plant.expected_harvest_date,
-        notes=db_plant.notes
+        notes=db_plant.notes,
+        images=[]
     )
 
 @router.get("/plants", response_model=list[Plant])
@@ -203,6 +211,7 @@ def list_plants(
             season=Season(p.season),
             year=p.year,
             quantity=p.quantity,
+            space_required=p.space_required,
             expected_harvest_date=p.expected_harvest_date,
             notes=p.notes
         )
@@ -224,7 +233,9 @@ def get_plant(plant_id: int, db: Session = Depends(get_db)) -> Plant:
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
+        year=db_plant.year,
         quantity=db_plant.quantity,
+        space_required=db_plant.space_required,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes,
         images=[]  # Images loaded separately
@@ -277,6 +288,7 @@ def update_plant(plant_id: int, plant_update: Plant, db: Session = Depends(get_d
     db_plant.name = plant_update.name
     db_plant.variety = plant_update.variety
     db_plant.quantity = plant_update.quantity
+    db_plant.space_required = plant_update.space_required
     db_plant.season = plant_update.season.value
     db_plant.planting_date = plant_update.planting_date
     db_plant.expected_harvest_date = plant_update.expected_harvest_date
@@ -294,6 +306,7 @@ def update_plant(plant_id: int, plant_update: Plant, db: Session = Depends(get_d
         status=PlantStatus(db_plant.status),
         season=Season(db_plant.season),
         quantity=db_plant.quantity,
+        space_required=db_plant.space_required,
         expected_harvest_date=db_plant.expected_harvest_date,
         notes=db_plant.notes
     )

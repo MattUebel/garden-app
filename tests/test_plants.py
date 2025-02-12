@@ -285,3 +285,63 @@ def test_list_plants_by_year(client, test_db):
     data = response.json()
     assert len(data) == 1
     assert data[0]["name"] == f"Plant {current_year - 1}"
+
+def test_create_plant_with_space_required(client, test_db):
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": "Test notes"
+    })
+    bed_id = bed_response.json()["id"]
+    current_year = datetime.now().year
+    
+    plant_data = {
+        "name": "Tomato",
+        "variety": "Cherry",
+        "planting_date": str(date.today()),
+        "location": f"Bed {bed_id}",
+        "status": "PLANTED",
+        "season": "SUMMER",
+        "year": current_year,
+        "space_required": 8,
+        "expected_harvest_date": str(date.today()),
+        "notes": "Test plant"
+    }
+    
+    response = client.post("/api/garden/plants", json=plant_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["space_required"] == 8
+
+def test_update_plant_space_required(client, test_db):
+    # First create a plant
+    bed_response = client.post("/api/garden/beds", json={
+        "name": "Test Bed",
+        "dimensions": "3x6",
+        "notes": "Test notes"
+    })
+    bed_id = bed_response.json()["id"]
+    
+    plant_data = {
+        "name": "Tomato",
+        "variety": "Cherry",
+        "planting_date": str(date.today()),
+        "location": f"Bed {bed_id}",
+        "status": "PLANTED",
+        "season": "SUMMER",
+        "year": datetime.now().year,
+        "space_required": 4,
+        "notes": "Test plant"
+    }
+    
+    create_response = client.post("/api/garden/plants", json=plant_data)
+    plant_id = create_response.json()["id"]
+    
+    # Update the space required
+    update_data = create_response.json()
+    update_data["space_required"] = 16
+    
+    update_response = client.patch(f"/api/garden/plants/{plant_id}", json=update_data)
+    assert update_response.status_code == 200
+    updated_data = update_response.json()
+    assert updated_data["space_required"] == 16
