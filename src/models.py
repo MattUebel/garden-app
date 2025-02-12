@@ -6,12 +6,6 @@ import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from .database import Base
 
-class Season(str, Enum):
-    SPRING = "SPRING"
-    SUMMER = "SUMMER"
-    FALL = "FALL"
-    WINTER = "WINTER"
-
 class PlantStatus(str, Enum):
     PLANTED = "PLANTED"
     SPROUTED = "SPROUTED"
@@ -43,7 +37,6 @@ class Plant(BaseModel):
     planting_date: datetime
     location: str  # Location in garden
     status: PlantStatus
-    season: Season
     year: Optional[int] = Field(default_factory=lambda: datetime.now().year)  # Default to current year
     quantity: int = 1
     space_required: Optional[int] = Field(default=4, description="Space required per plant in square inches")
@@ -91,7 +84,6 @@ class GardenBed(BaseModel):
 class GardenStats(BaseModel):
     total_plants: int
     plants_by_status: dict[PlantStatus, int]
-    plants_by_season: dict[Season, int]
 
 class DBGardenBed(Base):
     __tablename__ = "garden_beds"
@@ -111,7 +103,6 @@ class DBPlant(Base):
     planting_date = sa.Column(sa.DateTime)
     bed_id = sa.Column(sa.Integer, sa.ForeignKey("garden_beds.id"))
     status = sa.Column(sa.String)
-    season = sa.Column(sa.String)
     year = sa.Column(sa.Integer)  # New column
     quantity = sa.Column(sa.Integer, default=1)
     space_required = sa.Column(sa.Integer, default=4)

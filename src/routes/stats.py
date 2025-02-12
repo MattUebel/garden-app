@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.express as px
 import numpy as np
 from sqlalchemy import distinct
-from ..models import GardenStats, PlantStatus, Season, DBPlant, DBGardenBed
+from ..models import GardenStats, PlantStatus, DBPlant, DBGardenBed
 from ..database import get_db
 
 router = APIRouter(prefix="/stats", tags=["stats"])
@@ -15,23 +15,19 @@ router = APIRouter(prefix="/stats", tags=["stats"])
 def get_garden_stats(db: Session = Depends(get_db)) -> GardenStats:
     all_plants = db.query(DBPlant).all()
     
-    # Initialize counts for all statuses and seasons
+    # Initialize counts for all statuses
     status_counts = {status.value: 0 for status in PlantStatus}
-    season_counts = {season.value: 0 for season in Season}
     total_plants = 0
     
     # Count plants
     for plant in all_plants:
         if plant.status in status_counts:
             status_counts[plant.status] += plant.quantity
-        if plant.season in season_counts:
-            season_counts[plant.season] += plant.quantity
         total_plants += plant.quantity
     
     return GardenStats(
         total_plants=total_plants,
-        plants_by_status=status_counts,
-        plants_by_season=season_counts
+        plants_by_status=status_counts
     )
 
 @router.get("/beds/{bed_id}")
@@ -57,7 +53,6 @@ def get_bed_stats(
     total_plants = 0
     total_space_used = 0
     plants_by_status = {status.value: 0 for status in PlantStatus}
-    plants_by_season = {season.value: 0 for season in Season}
     plants_by_year = {}
     
     # Count plants in this bed
@@ -69,7 +64,6 @@ def get_bed_stats(
         total_plants += plant.quantity
         total_space_used += plant.quantity * plant.space_required
         plants_by_status[plant.status] += plant.quantity
-        plants_by_season[plant.season] += plant.quantity
         plants_by_year[plant.year] = plants_by_year.get(plant.year, 0) + plant.quantity
     
     # Calculate space utilization
@@ -86,7 +80,6 @@ def get_bed_stats(
         "total_plants": total_plants,
         "total_space_used": total_space_used,
         "plants_by_status": plants_by_status,
-        "plants_by_season": plants_by_season,
         "plants_by_year": plants_by_year,
         "space_utilization": space_utilization
     }

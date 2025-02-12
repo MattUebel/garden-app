@@ -1,13 +1,12 @@
-from fastapi import APIRouter, HTTPException, Path, Body, Depends, Query
+from typing import Optional
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import OperationalError, ProgrammingError, SQLAlchemyError
 from ..database import get_db
-from ..models import (
-    GardenBed, Plant, Season, PlantStatus,
-    DBGardenBed, DBPlant
-)
+from ..models import Plant, GardenBed, PlantStatus, DBPlant, DBGardenBed, DBPlantImage
+from . import VALID_STATUS_TRANSITIONS
 
-router = APIRouter(prefix="/garden", tags=["garden"])
+router = APIRouter(prefix="/garden")
 
 VALID_STATUS_TRANSITIONS = {
     PlantStatus.PLANTED: [PlantStatus.SPROUTED],
@@ -60,7 +59,6 @@ def list_garden_beds(db: Session = Depends(get_db)) -> list[GardenBed]:
                         planting_date=p.planting_date,
                         location=f"Bed {bed.id}",
                         status=PlantStatus(p.status),
-                        season=Season(p.season),
                         expected_harvest_date=p.expected_harvest_date,
                         notes=p.notes,
                         space_required=p.space_required
@@ -92,7 +90,6 @@ def get_garden_bed(bed_id: int, db: Session = Depends(get_db)) -> GardenBed:
                 planting_date=p.planting_date,
                 location=f"Bed {db_bed.id}",
                 status=PlantStatus(p.status),
-                season=Season(p.season),
                 year=p.year,
                 quantity=p.quantity,
                 space_required=p.space_required,
@@ -129,7 +126,6 @@ def update_garden_bed(bed_id: int, garden_bed: GardenBed, db: Session = Depends(
                 planting_date=p.planting_date,
                 location=f"Bed {db_bed.id}",
                 status=PlantStatus(p.status),
-                season=Season(p.season),
                 expected_harvest_date=p.expected_harvest_date,
                 notes=p.notes,
                 space_required=p.space_required
@@ -160,7 +156,6 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         planting_date=plant.planting_date,
         bed_id=bed_id,
         status=plant.status.value,
-        season=plant.season.value,
         year=plant.year,
         quantity=plant.quantity,
         space_required=plant.space_required,
@@ -178,7 +173,6 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
         planting_date=db_plant.planting_date,
         location=f"Bed {bed_id}",
         status=PlantStatus(db_plant.status),
-        season=Season(db_plant.season),
         year=db_plant.year,
         quantity=db_plant.quantity,
         space_required=db_plant.space_required,
@@ -189,13 +183,10 @@ def create_plant(plant: Plant, db: Session = Depends(get_db)) -> Plant:
 
 @router.get("/plants", response_model=list[Plant])
 def list_plants(
-    season: Season | None = None,
     year: int | None = None,
     db: Session = Depends(get_db)
 ) -> list[Plant]:
     query = db.query(DBPlant)
-    if season:
-        query = query.filter(DBPlant.season == season.value)
     if year:
         query = query.filter(DBPlant.year == year)
     
@@ -208,7 +199,6 @@ def list_plants(
             planting_date=p.planting_date,
             location=f"Bed {p.bed_id}",
             status=PlantStatus(p.status),
-            season=Season(p.season),
             year=p.year,
             quantity=p.quantity,
             space_required=p.space_required,
@@ -232,7 +222,6 @@ def get_plant(plant_id: int, db: Session = Depends(get_db)) -> Plant:
         planting_date=db_plant.planting_date,
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
-        season=Season(db_plant.season),
         year=db_plant.year,
         quantity=db_plant.quantity,
         space_required=db_plant.space_required,
@@ -270,7 +259,6 @@ def update_plant_status(
         planting_date=db_plant.planting_date,
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
-        season=Season(db_plant.season),
         year=db_plant.year or datetime.now().year,  # Default to current year if not set
         quantity=db_plant.quantity,
         expected_harvest_date=db_plant.expected_harvest_date,
@@ -289,7 +277,6 @@ def update_plant(plant_id: int, plant_update: Plant, db: Session = Depends(get_d
     db_plant.variety = plant_update.variety
     db_plant.quantity = plant_update.quantity
     db_plant.space_required = plant_update.space_required
-    db_plant.season = plant_update.season.value
     db_plant.planting_date = plant_update.planting_date
     db_plant.expected_harvest_date = plant_update.expected_harvest_date
     db_plant.notes = plant_update.notes
@@ -304,7 +291,7 @@ def update_plant(plant_id: int, plant_update: Plant, db: Session = Depends(get_d
         planting_date=db_plant.planting_date,
         location=f"Bed {db_plant.bed_id}",
         status=PlantStatus(db_plant.status),
-        season=Season(db_plant.season),
+        year=db_plant.year,
         quantity=db_plant.quantity,
         space_required=db_plant.space_required,
         expected_harvest_date=db_plant.expected_harvest_date,

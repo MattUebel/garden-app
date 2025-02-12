@@ -15,17 +15,6 @@
 .status-harvesting { color: #fd7e14; }
 .status-finished { color: #dc3545; }
 
-/* Season badges */
-.season-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
-}
-.season-spring { background-color: #a8e6cf; }
-.season-summer { background-color: #ffd3b6; }
-.season-fall { background-color: #ffaaa5; }
-.season-winter { background-color: #d4e7f5; }
-
 /* Plant images */
 .plant-image {
     height: 200px;

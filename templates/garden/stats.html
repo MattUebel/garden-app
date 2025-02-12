@@ -15,16 +15,7 @@
         </div>
     </div>
     
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h3>Plants by Season</h3>
-                <div id="season-chart"></div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
+    <div class="col-md-12">
         <div class="card">
             <div class="card-body">
                 <h3>Plants by Status</h3>
@@ -50,7 +41,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     loadOverallStats();
-    loadSeasonChart();
     loadGardenBedStats();
 });
 
@@ -85,14 +75,6 @@ function loadOverallStats() {
         });
 }
 
-function loadSeasonChart() {
-    fetch('/api/stats/charts/plants-by-season')
-        .then(response => response.json())
-        .then(chartData => {
-            Plotly.newPlot('season-chart', chartData.data, chartData.layout);
-        });
-}
-
 function loadGardenBedStats() {
     fetch('/api/garden/beds')
         .then(response => response.json())
@@ -107,17 +89,11 @@ function loadGardenBedStats() {
                     <div class="col-md-4 mb-4">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">${stats.bed_name}</h5>
-                                <p><strong>Space:</strong> ${stats.space_utilization}</p>
+                                <h4>${stats.bed_name}</h4>
+                                <p><strong>Dimensions:</strong> ${stats.dimensions}</p>
                                 <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
-                                <div class="small">
-                                    <strong>Status Breakdown:</strong><br>
-                                    ${Object.entries(stats.plants_by_status)
-                                        .filter(([_, count]) => count > 0)
-                                        .map(([status, count]) => `${status}: ${count}`)
-                                        .join('<br>')
-                                    }
-                                </div>
+                                <p><strong>Space Used:</strong> ${stats.total_space_used} sq. inches</p>
+                                <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
                             </div>
                         </div>
                     </div>

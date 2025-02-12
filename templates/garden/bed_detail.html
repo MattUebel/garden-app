@@ -1,48 +1,39 @@
 {% extends "base.html" %}
 
-{% block title %}Garden Bed Details{% endblock %}
+{% block title %}Bed Details{% endblock %}
 
 {% block content %}
-<div class="row g-2"> <!-- Reduced gap -->
-    <div class="col-12">
-        <div class="card shadow-sm"> <!-- Added shadow-sm for subtle depth -->
-            <div class="card-body p-2"> <!-- Reduced padding -->
-                <div id="bed-details" class="d-flex justify-content-between align-items-start">
-                    <!-- Bed details will be loaded here -->
+<div class="container">
+    <div class="row">
+        <div class="col-12 col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h2 id="bed-title" class="h3 mb-0">Loading...</h2>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm w-auto" id="year-filter">
+                        <!-- Years will be populated in JavaScript -->
+                    </select>
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addPlantModal">
+                        <i class="bi bi-plus-circle"></i> Add
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-lg-8 mt-2"> <!-- Adjusted breakpoint and reduced margin -->
-        <div class="d-flex justify-content-between align-items-center mb-2"> <!-- Reduced margin -->
-            <h3 class="h4 mb-0">Plants in this Bed</h3> <!-- Smaller heading -->
-            <div class="d-flex gap-1"> <!-- Reduced gap -->
-                <select class="form-select form-select-sm" id="year-filter" style="width: auto;">
-                    <!-- Years will be populated in JavaScript -->
-                </select>
-                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addPlantModal">
-                    <i class="bi bi-plus-circle"></i> Add
-                </button>
+            <div id="bed-plants" class="row g-2">
+                <!-- Plants will be loaded here -->
             </div>
         </div>
-        <div id="bed-plants" class="row g-2"> <!-- Reduced gap -->
-            <!-- Plants will be loaded here -->
-        </div>
-    </div>
 
-    <div class="col-12 col-lg-4 mt-2"> <!-- Adjusted breakpoint and reduced margin -->
-        <div class="card shadow-sm"> <!-- Added shadow-sm for subtle depth -->
-            <div class="card-body p-2"> <!-- Reduced padding -->
-                <h3 class="h5 mb-2">Bed Statistics</h3> <!-- Smaller heading -->
-                <div id="bed-stats" class="small"> <!-- Added small text -->
-                    <!-- Stats will be loaded here -->
-                </div>
-                <div id="status-chart" class="mt-2"> <!-- Reduced margin -->
-                    <!-- Status distribution chart will be loaded here -->
-                </div>
-                <div id="year-comparison-chart" class="mt-2"> <!-- Reduced margin -->
-                    <!-- Year comparison chart will be loaded here -->
+        <div class="col-12 col-lg-4 mt-2">
+            <div class="card shadow-sm">
+                <div class="card-body p-2">
+                    <h3 class="h5 mb-2">Bed Statistics</h3>
+                    <div id="bed-stats" class="small">
+                        <!-- Stats will be loaded here -->
+                    </div>
+                    <div id="status-chart" class="mt-2">
+                        <!-- Status distribution chart will be loaded here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -51,16 +42,16 @@
 
 <!-- Add Plant Modal -->
 <div class="modal fade" id="addPlantModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable"> <!-- Added scrollable for mobile -->
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header py-2"> <!-- Reduced padding -->
-                <h5 class="modal-title h6">Add Plant to Bed</h5> <!-- Smaller heading -->
+            <div class="modal-header py-2">
+                <h5 class="modal-title h6">Add Plant to Bed</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="quick-plant-form">
-                    <div class="mb-2"> <!-- Reduced margin -->
-                        <label class="form-label small">Name</label> <!-- Smaller label -->
+                    <div class="mb-2">
+                        <label class="form-label small">Name</label>
                         <input type="text" class="form-control form-control-sm" id="name" name="name" required>
                     </div>
                     <div class="mb-2">
@@ -70,23 +61,6 @@
                     <div class="mb-2">
                         <label class="form-label small">Quantity</label>
                         <input type="number" class="form-control form-control-sm" id="quantity" name="quantity" value="1" min="1" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Season</label>
-                        <select class="form-select form-select-sm" id="season" name="season" required>
-                            <option value="SPRING">Spring 🌷</option>
-                            <option value="SUMMER">Summer ☀️</option>
-                            <option value="FALL">Fall 🍂</option>
-                            <option value="WINTER">Winter ❄️</option>
-                        </select>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Planting Date</label>
-                        <input type="date" class="form-control form-control-sm" id="planting_date" name="planting_date" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small">Expected Harvest Date</label>
-                        <input type="date" class="form-control form-control-sm" id="expected_harvest_date" name="expected_harvest_date">
                     </div>
                     <div class="mb-2">
                         <label class="form-label small">Space Required per Plant</label>
@@ -100,12 +74,20 @@
                         </select>
                     </div>
                     <div class="mb-2">
+                        <label class="form-label small">Planting Date</label>
+                        <input type="date" class="form-control form-control-sm" id="planting_date" name="planting_date" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">Expected Harvest Date</label>
+                        <input type="date" class="form-control form-control-sm" id="expected_harvest_date" name="expected_harvest_date">
+                    </div>
+                    <div class="mb-2">
                         <label class="form-label small">Notes</label>
                         <textarea class="form-control form-control-sm" id="notes" name="notes" rows="2"></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer py-1"> <!-- Reduced padding -->
+            <div class="modal-footer py-1">
                 <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-sm btn-success" onclick="submitQuickPlantForm()">Add Plant</button>
             </div>
@@ -115,10 +97,10 @@
 
 <!-- Edit Plant Modal -->
 <div class="modal fade" id="editPlantModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable"> <!-- Added scrollable for mobile -->
+    <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header py-2"> <!-- Reduced padding -->
-                <h5 class="modal-title h6">Edit Plant</h5> <!-- Smaller heading -->
+            <div class="modal-header py-2">
+                <h5 class="modal-title h6">Edit Plant</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -147,15 +129,6 @@
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="edit-season" class="form-label">Season</label>
-                        <select class="form-select" id="edit-season" name="season" required>
-                            <option value="SPRING">Spring 🌷</option>
-                            <option value="SUMMER">Summer ☀️</option>
-                            <option value="FALL">Fall 🍂</option>
-                            <option value="WINTER">Winter ❄️</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
                         <label for="edit-planting-date" class="form-label">Planting Date</label>
                         <input type="date" class="form-control" id="edit-planting-date" name="planting_date" required>
                     </div>
@@ -170,46 +143,15 @@
                     <input type="hidden" id="edit-plant-id" name="id">
                 </form>
             </div>
-            <div class="modal-footer py-1"> <!-- Reduced padding -->
-                <button type="button" class="btn btn-sm btn-danger me-auto" onclick="deletePlant()">Delete</button>
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary" onclick="submitEditPlantForm()">Save</button>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" onclick="deletePlant()">Delete Plant</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitEditPlantForm()">Save Changes</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Edit Bed Modal -->
-<div class="modal fade" id="editBedModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-scrollable"> <!-- Added scrollable for mobile -->
-        <div class="modal-content">
-            <div class="modal-header py-2"> <!-- Reduced padding -->
-                <h5 class="modal-title h6">Edit Garden Bed</h5> <!-- Smaller heading -->
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="edit-bed-form">
-                    <div class="mb-3">
-                        <label for="edit-name" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="edit-name" name="name" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-dimensions" class="form-label">Dimensions</label>
-                        <input type="text" class="form-control" id="edit-dimensions" name="dimensions" placeholder="e.g. 10x20" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="edit-notes" class="form-label">Notes</label>
-                        <textarea class="form-control" id="edit-notes" name="notes" rows="3"></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer py-1"> <!-- Reduced padding -->
-                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-sm btn-primary" onclick="submitEditBedForm()">Save</button>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -220,13 +162,6 @@ const STATUS_EMOJIS = {
     'FLOWERING': '🌸',
     'HARVESTING': '🥬',
     'FINISHED': '✨'
-};
-
-const SEASON_EMOJIS = {
-    'SPRING': '🌷',
-    'SUMMER': '☀️',
-    'FALL': '🍂',
-    'WINTER': '❄️'
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -242,7 +177,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function setupYearFilter() {
     const yearSelect = document.getElementById('year-filter');
-    const currentYear = new Date().getFullYear();
     
     // Fetch available years from API
     fetch('/api/stats/years')
@@ -253,20 +187,19 @@ function setupYearFilter() {
             ).join('');
             
             // Select current year by default
+            const currentYear = new Date().getFullYear();
             if (years.includes(currentYear)) {
                 yearSelect.value = currentYear;
             }
             
-            // Initial load after setting the year
+            // Initial load of bed data
             const bedId = parseInt('{{ bed_id }}');
             loadBedPlants(bedId);
-            loadBedStats(bedId);
         });
     
-    yearSelect.addEventListener('change', function() {
+    yearSelect.addEventListener('change', () => {
         const bedId = parseInt('{{ bed_id }}');
         loadBedPlants(bedId);
-        loadBedStats(bedId);
     });
 }
 
@@ -274,11 +207,11 @@ function loadBedDetails(bedId) {
     fetch(`/api/garden/beds/${bedId}`)
         .then(response => response.json())
         .then(bed => {
-            const container = document.getElementById('bed-details');
-            container.innerHTML = `
+            document.getElementById('bed-title').textContent = bed.name;
+            document.querySelector('#bed-title').innerHTML = `
                 <div>
                     <h2>${bed.name}</h2>
-                    <p><strong>Dimensions:</strong> ${bed.dimensions}</p>
+                    <p class="text-muted mb-0">Dimensions: ${bed.dimensions}</p>
                     ${bed.notes ? `<p><strong>Notes:</strong> ${bed.notes}</p>` : ''}
                 </div>
                 <div>
@@ -309,18 +242,18 @@ function loadBedPlants(bedId) {
                 return;
             }
             container.innerHTML = bedPlants.map(plant => `
-                <div class="col-12 col-sm-6"> <!-- Changed to full width on mobile -->
-                    <div class="card shadow-sm h-100"> <!-- Added shadow-sm -->
+                <div class="col-12 col-sm-6">
+                    <div class="card shadow-sm h-100">
                         ${plant.images && plant.images.length > 0 ? 
                             `<img src="${plant.images[0].url}" class="card-img-top plant-image" style="max-height: 150px; object-fit: cover;" alt="${plant.name}">` : 
                             `<div class="card-img-top plant-image-placeholder d-flex align-items-center justify-content-center" style="height: 100px;">
                                 <i class="bi bi-image text-muted"></i>
                             </div>`
                         }
-                        <div class="card-body p-2"> <!-- Reduced padding -->
+                        <div class="card-body p-2">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h5 class="card-title h6 mb-1">${plant.name}</h5> <!-- Smaller heading -->
+                                    <h5 class="card-title h6 mb-1">${plant.name}</h5>
                                     ${plant.variety ? `<div class="text-muted small mb-1">${plant.variety}</div>` : ''}
                                     <div class="text-muted small">
                                         ${plant.quantity > 1 ? `${plant.quantity} plants` : '1 plant'} × ${plant.space_required} sq. inches each
@@ -335,12 +268,9 @@ function loadBedPlants(bedId) {
                                     </button>
                                 </div>
                             </div>
-                            <div class="mt-2 small"> <!-- Added small text -->
+                            <div class="mt-2 small">
                                 <span class="badge status-${plant.status}">
                                     ${STATUS_EMOJIS[plant.status]} ${plant.status}
-                                </span>
-                                <span class="badge season-badge season-${plant.season}">
-                                    ${SEASON_EMOJIS[plant.season]} ${plant.season}
                                 </span>
                                 <div class="mt-1">
                                     <strong>Year:</strong> ${plant.year}<br>
@@ -390,7 +320,6 @@ function loadBedStats(bedId) {
                 <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
             `;
 
-            // Create status distribution chart with mobile-friendly settings
             const statusData = {
                 values: Object.values(stats.plants_by_status),
                 labels: Object.keys(stats.plants_by_status),
@@ -399,36 +328,14 @@ function loadBedStats(bedId) {
             };
             
             Plotly.newPlot('status-chart', [statusData], {
-                height: 250, // Reduced height
-                margin: { t: 20, b: 20, l: 20, r: 20 }, // Reduced margins
+                height: 250,
+                margin: { t: 20, b: 20, l: 20, r: 20 },
                 title: {
                     text: `Status Distribution (${year})`,
-                    font: { size: 14 } // Smaller title
+                    font: { size: 14 }
                 },
-                font: { size: 11 } // Smaller font for labels
+                font: { size: 11 }
             });
-
-            // Create year comparison chart with mobile-friendly settings
-            if (Object.keys(stats.plants_by_year).length > 0) {
-                const yearData = {
-                    x: Object.keys(stats.plants_by_year),
-                    y: Object.values(stats.plants_by_year),
-                    type: 'bar',
-                    name: 'Plants by Year'
-                };
-                
-                Plotly.newPlot('year-comparison-chart', [yearData], {
-                    height: 250, // Reduced height
-                    margin: { t: 20, b: 30, l: 30, r: 20 }, // Reduced margins
-                    title: {
-                        text: 'Year-over-Year Comparison',
-                        font: { size: 14 } // Smaller title
-                    },
-                    font: { size: 11 }, // Smaller font for labels
-                    xaxis: { title: 'Year' },
-                    yaxis: { title: 'Plants' }
-                });
-            }
         });
 }
 
@@ -516,55 +423,19 @@ function submitQuickPlantForm() {
     .catch(handleApiError);
 }
 
-function editBed(bedId) {
-    // Populate edit form with current bed data
-    document.getElementById('edit-name').value = window.currentBed.name;
-    document.getElementById('edit-dimensions').value = window.currentBed.dimensions;
-    document.getElementById('edit-notes').value = window.currentBed.notes || '';
-    
-    // Show modal
-    new bootstrap.Modal(document.getElementById('editBedModal')).show();
-}
-
-function submitEditBedForm() {
-    const form = document.getElementById('edit-bed-form');
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
-    const bedId = parseInt('{{ bed_id }}');
-    
-    fetch(`/api/garden/beds/${bedId}`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(() => {
-        document.getElementById('editBedModal').querySelector('[data-bs-dismiss="modal"]').click();
-        showNotification('Garden bed updated successfully');
-        loadBedDetails(bedId);
-        loadBedStats(bedId);
-    })
-    .catch(handleApiError);
-}
-
 function editPlant(plant) {
-    // Set form values
     const form = document.getElementById('edit-plant-form');
     form.querySelector('#edit-plant-id').value = plant.id;
     form.querySelector('#edit-name').value = plant.name;
     form.querySelector('#edit-variety').value = plant.variety || '';
     form.querySelector('#edit-quantity').value = plant.quantity;
     form.querySelector('#edit-space-required').value = plant.space_required;
-    form.querySelector('#edit-season').value = plant.season;
     form.querySelector('#edit-planting-date').value = plant.planting_date.split('T')[0];
     if (plant.expected_harvest_date) {
         form.querySelector('#edit-expected-harvest-date').value = plant.expected_harvest_date.split('T')[0];
     }
     form.querySelector('#edit-notes').value = plant.notes || '';
     
-    // Show modal
     new bootstrap.Modal(document.getElementById('editPlantModal')).show();
 }
 
@@ -573,9 +444,8 @@ function submitEditPlantForm() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
     const plantId = data.id;
-    delete data.id;  // Remove id from payload
+    delete data.id;
     
-    // Format numbers and dates
     data.quantity = parseInt(data.quantity);
     data.space_required = parseInt(data.space_required);
     data.planting_date = new Date(data.planting_date).toISOString();
@@ -601,6 +471,47 @@ function submitEditPlantForm() {
     .catch(handleApiError);
 }
 
+function formatDate(dateStr) {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString();
+}
+
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed top-0 end-0 m-3';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
+
+function handleApiError(error) {
+    console.error('API Error:', error);
+    showNotification('Error: ' + (error.message || 'Something went wrong'));
+}
+
+// Edit/Delete Bed functions
+function editBed(bedId) {
+    // TODO: Implement bed editing
+    alert('Bed editing not yet implemented');
+}
+
+function deleteBed(bedId) {
+    if (confirm('Are you sure you want to delete this bed? This will also delete all plants in this bed. This action cannot be undone.')) {
+        fetch(`/api/garden/beds/${bedId}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(() => {
+            showNotification('Garden bed deleted successfully');
+            window.location.href = '/garden';
+        })
+        .catch(handleApiError);
+    }
+}
+
 function deletePlant() {
     const plantId = document.getElementById('edit-plant-id').value;
     if (confirm('Are you sure you want to delete this plant? This action cannot be undone.')) {
@@ -614,20 +525,6 @@ function deletePlant() {
             const bedId = parseInt('{{ bed_id }}');
             loadBedPlants(bedId);
             loadBedStats(bedId);
-        })
-        .catch(handleApiError);
-    }
-}
-
-function deleteBed(bedId) {
-    if (confirm('Are you sure you want to delete this garden bed? This will also delete all plants in this bed. This action cannot be undone.')) {
-        fetch(`/api/garden/beds/${bedId}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(() => {
-            showNotification('Garden bed deleted successfully');
-            window.location.href = '/ui/garden/beds';  // Redirect to beds list
         })
         .catch(handleApiError);
     }
