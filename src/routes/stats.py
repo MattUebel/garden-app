@@ -17,17 +17,22 @@ def get_garden_stats(db: Session = Depends(get_db)) -> GardenStats:
     
     # Initialize counts for all statuses
     status_counts = {status.value: 0 for status in PlantStatus}
+    season_counts = {"SPRING": 0, "SUMMER": 0, "FALL": 0, "WINTER": 0}
     total_plants = 0
+    plants_by_year = {}
     
     # Count plants
     for plant in all_plants:
         if plant.status in status_counts:
             status_counts[plant.status] += plant.quantity
         total_plants += plant.quantity
+        plants_by_year[str(plant.year)] = plants_by_year.get(str(plant.year), 0) + plant.quantity
     
     return GardenStats(
         total_plants=total_plants,
-        plants_by_status=status_counts
+        plants_by_status=status_counts,
+        plants_by_season=season_counts,
+        plants_by_year=plants_by_year
     )
 
 @router.get("/beds/{bed_id}")
@@ -53,6 +58,7 @@ def get_bed_stats(
     total_plants = 0
     total_space_used = 0
     plants_by_status = {status.value: 0 for status in PlantStatus}
+    plants_by_season = {"SPRING": 0, "SUMMER": 0, "FALL": 0, "WINTER": 0}
     plants_by_year = {}
     
     # Count plants in this bed
@@ -64,7 +70,7 @@ def get_bed_stats(
         total_plants += plant.quantity
         total_space_used += plant.quantity * plant.space_required
         plants_by_status[plant.status] += plant.quantity
-        plants_by_year[plant.year] = plants_by_year.get(plant.year, 0) + plant.quantity
+        plants_by_year[str(plant.year)] = plants_by_year.get(str(plant.year), 0) + plant.quantity
     
     # Calculate space utilization
     try:
@@ -79,26 +85,69 @@ def get_bed_stats(
         "dimensions": bed.dimensions,
         "total_plants": total_plants,
         "total_space_used": total_space_used,
+        "space_utilization": space_utilization,
         "plants_by_status": plants_by_status,
-        "plants_by_year": plants_by_year,
-        "space_utilization": space_utilization
+        "plants_by_season": plants_by_season,
+        "plants_by_year": plants_by_year
     }
+
+@router.get("/charts/plants-by-year")
+def get_plants_by_year_chart(db: Session = Depends(get_db)):
+    """Get a chart showing plant distribution by year"""
+    plants = db.query(DBPlant).all()
+    
+    # Count plants by year
+    year_counts = {}
+    for plant in plants:
+        if plant.year:
+            year_counts[str(plant.year)] = year_counts.get(str(plant.year), 0) + plant.quantity
+    
+    # Create dataframe
+    df = pd.DataFrame([
+        {"year": year, "count": count} 
+        for year, count in year_counts.items()
+    ])
+    
+    if df.empty:
+        current_year = str(datetime.now().year)
+        df = pd.DataFrame([{"year": current_year, "count": 0}])
+    
+    # Create chart data directly instead of using plotly
+    chart_data = {
+        "data": [
+            {
+                "x": df["year"].tolist(),
+                "y": df["count"].tolist(),
+                "type": "bar",
+                "name": "Plants"
+            }
+        ],
+        "layout": {
+            "title": "Plants by Year",
+            "xaxis": {"title": "Year"},
+            "yaxis": {
+                "title": "Number of Plants",
+                "tickmode": "linear",
+                "tick0": 0,
+                "dtick": 1
+            }
+        }
+    }
+    
+    return JSONResponse(content=chart_data)
 
 @router.get("/charts/plants-by-season")
 def get_plants_by_season_chart(db: Session = Depends(get_db)):
-    # Initialize data for all seasons
-    seasons_data = {season.value: 0 for season in Season}
-    
-    # Get plant counts
+    """Get a chart showing plant distribution by season"""
     plants = db.query(DBPlant).all()
-    for plant in plants:
-        if plant.season in seasons_data:
-            seasons_data[plant.season] += 1
     
-    # Create dataframe with all seasons
+    # Count plants by season
+    season_counts = {"SPRING": 0, "SUMMER": 0, "FALL": 0, "WINTER": 0}
+    
+    # Create dataframe
     df = pd.DataFrame([
         {"season": season, "count": count} 
-        for season, count in seasons_data.items()
+        for season, count in season_counts.items()
     ])
     
     fig = px.bar(
@@ -113,8 +162,22 @@ def get_plants_by_season_chart(db: Session = Depends(get_db)):
     fig.update_yaxes(tickmode="linear", tick0=0, dtick=1)
     
     # Convert to dict and handle numpy types
-    fig_dict = fig.to_dict()
-    return JSONResponse(content=_convert_numpy(fig_dict))
+    chart_data = {
+        "data": [
+            {
+                "x": df["season"].tolist(),
+                "y": df["count"].tolist(),
+                "type": "bar",
+                "name": "Plants"
+            }
+        ],
+        "layout": {
+            "title": "Plants by Season",
+            "xaxis": {"title": "Season"},
+            "yaxis": {"title": "Number of Plants", "tickmode": "linear", "tick0": 0, "dtick": 1}
+        }
+    }
+    return chart_data
 
 @router.get("/years")
 def get_available_years(db: Session = Depends(get_db)):
@@ -131,7 +194,6 @@ def get_available_years(db: Session = Depends(get_db)):
         filter(DBPlant.bed_id == DBGardenBed.id).\
         filter(DBPlant.year.isnot(None)).\
         all()
-
     # Convert from list of tuples to list of integers, excluding None values
     plant_years = [year[0] for year in years if year[0] is not None]
     
@@ -144,10 +206,14 @@ def get_available_years(db: Session = Depends(get_db)):
 
 def _convert_numpy(obj):
     """Convert numpy types to Python native types for JSON serialization"""
-    if isinstance(obj, (np.ndarray, np.generic)):
-        return obj.tolist()
-    elif isinstance(obj, dict):
+    if isinstance(obj, dict):
         return {k: _convert_numpy(v) for k, v in obj.items()}
     elif isinstance(obj, list):
-        return [_convert_numpy(i) for i in obj]
+        return [_convert_numpy(x) for x in obj]
+    elif isinstance(obj, (np.int64, np.int32)):
+        return int(obj)
+    elif isinstance(obj, (np.float64, np.float32)):
+        return float(obj)
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
     return obj

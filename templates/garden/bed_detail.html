@@ -2,6 +2,37 @@
 
 {% block title %}Bed Details{% endblock %}
 
+{% block extra_css %}
+<style>
+.plant-thumbnail {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+.plant-thumbnail-placeholder {
+    width: 48px;
+    height: 48px;
+    background-color: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+.status-badge {
+    min-width: 100px;
+    display: inline-block;
+}
+.plant-table th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <div class="row">
@@ -19,7 +50,7 @@
                     </button>
                 </div>
             </div>
-            <div id="bed-plants" class="row g-2">
+            <div id="bed-plants" class="table-responsive">
                 <!-- Plants will be loaded here -->
             </div>
         </div>
@@ -164,6 +195,8 @@ const STATUS_EMOJIS = {
     'FINISHED': '✨'
 };
 
+// Remove season-related globals
+
 document.addEventListener('DOMContentLoaded', function() {
     const bedId = parseInt('{{ bed_id }}');
     setupYearFilter();
@@ -241,70 +274,85 @@ function loadBedPlants(bedId) {
                 container.innerHTML = '<p>No plants in this bed for the selected year.</p>';
                 return;
             }
-            container.innerHTML = bedPlants.map(plant => `
-                <div class="col-12 col-sm-6">
-                    <div class="card shadow-sm h-100">
-                        ${plant.images && plant.images.length > 0 ? 
-                            `<img src="${plant.images[0].url}" class="card-img-top plant-image" style="max-height: 150px; object-fit: cover;" alt="${plant.name}">` : 
-                            `<div class="card-img-top plant-image-placeholder d-flex align-items-center justify-content-center" style="height: 100px;">
-                                <i class="bi bi-image text-muted"></i>
-                            </div>`
-                        }
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h5 class="card-title h6 mb-1">${plant.name}</h5>
-                                    ${plant.variety ? `<div class="text-muted small mb-1">${plant.variety}</div>` : ''}
-                                    <div class="text-muted small">
-                                        ${plant.quantity > 1 ? `${plant.quantity} plants` : '1 plant'} × ${plant.space_required} sq. inches each
+
+            container.innerHTML = `
+                <table class="table table-sm table-hover align-middle plant-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Plant</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                            <th>Space</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bedPlants.map(plant => `
+                            <tr>
+                                <td>
+                                    ${plant.images && plant.images.length > 0 ? 
+                                        `<img src="${plant.images[0].url}" class="plant-thumbnail" alt="${plant.name}">` : 
+                                        `<div class="plant-thumbnail-placeholder">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>`
+                                    }
+                                </td>
+                                <td>
+                                    <div class="fw-medium">${plant.name}</div>
+                                    ${plant.variety ? `<div class="text-muted small">${plant.variety}</div>` : ''}
+                                </td>
+                                <td>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm status-badge status-${plant.status.toLowerCase()} dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            ${STATUS_EMOJIS[plant.status]} ${plant.status}
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'SPROUTED')">
+                                                ${STATUS_EMOJIS.SPROUTED} Sprouted
+                                            </a></li>
+                                            <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FLOWERING')">
+                                                ${STATUS_EMOJIS.FLOWERING} Flowering
+                                            </a></li>
+                                            <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'HARVESTING')">
+                                                ${STATUS_EMOJIS.HARVESTING} Harvesting
+                                            </a></li>
+                                            <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FINISHED')">
+                                                ${STATUS_EMOJIS.FINISHED} Finished
+                                            </a></li>
+                                        </ul>
                                     </div>
-                                </div>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary py-0" onclick="editPlant(${JSON.stringify(plant).replace(/"/g, '&quot;')})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary py-0" onclick="openPhotoUpload(${plant.id})">
-                                        <i class="bi bi-camera"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="mt-2 small">
-                                <span class="badge status-${plant.status}">
-                                    ${STATUS_EMOJIS[plant.status]} ${plant.status}
-                                </span>
-                                <div class="mt-1">
-                                    <strong>Year:</strong> ${plant.year}<br>
-                                    <strong>Planted:</strong> ${formatDate(plant.planting_date)}<br>
-                                    <strong>Total Space:</strong> ${plant.quantity * plant.space_required} sq. inches<br>
-                                    ${plant.variety ? `<strong>Variety:</strong> ${plant.variety}<br>` : ''}
-                                    ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
-                                </div>
-                            </div>
-                            <div class="mt-2">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-success dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
-                                        Update Status
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'SPROUTED')">
-                                            ${STATUS_EMOJIS.SPROUTED} Sprouted
-                                        </a></li>
-                                        <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FLOWERING')">
-                                            ${STATUS_EMOJIS.FLOWERING} Flowering
-                                        </a></li>
-                                        <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'HARVESTING')">
-                                            ${STATUS_EMOJIS.HARVESTING} Harvesting
-                                        </a></li>
-                                        <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FINISHED')">
-                                            ${STATUS_EMOJIS.FINISHED} Finished
-                                        </a></li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <div>Planted: ${formatDate(plant.planting_date)}</div>
+                                        ${plant.expected_harvest_date ? 
+                                            `<div>Harvest: ${formatDate(plant.expected_harvest_date)}</div>` : 
+                                            ''}
+                                        <div>Quantity: ${plant.quantity}</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small">
+                                        <div>${plant.space_required} sq.in each</div>
+                                        <div class="text-muted">Total: ${plant.quantity * plant.space_required} sq.in</div>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="editPlant(${JSON.stringify(plant).replace(/"/g, '&quot;')})">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
+                                            <i class="bi bi-camera"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         });
 }
 

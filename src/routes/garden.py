@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 from ..database import get_db
 from ..models import Plant, GardenBed, PlantStatus, DBPlant, DBGardenBed, DBPlantImage
 from . import VALID_STATUS_TRANSITIONS

@@ -83,7 +83,9 @@ class GardenBed(BaseModel):
 
 class GardenStats(BaseModel):
     total_plants: int
-    plants_by_status: dict[PlantStatus, int]
+    plants_by_status: dict[str, int]  # Using str instead of PlantStatus for the dict key
+    plants_by_season: dict[str, int]
+    plants_by_year: dict[str, int]
 
 class DBGardenBed(Base):
     __tablename__ = "garden_beds"

@@ -3,7 +3,7 @@ from datetime import date, datetime
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 from main import app
-from src.models import Season, PlantStatus
+from src.models import PlantStatus
 
 
 @pytest.fixture
@@ -65,7 +65,9 @@ def test_create_plant(client, test_db):
         "planting_date": str(date.today()),
         "location": f"Bed {bed_id}",
         "status": "PLANTED",
-        "season": "SUMMER",
+        "quantity": 1,
+        "space_required": 4,
+        "year": date.today().year,
         "expected_harvest_date": str(date.today()),
         "notes": "Test plant"
     }
@@ -83,7 +85,9 @@ def test_invalid_plant_location(client, test_db):
         "planting_date": str(date.today()),
         "location": "Bed 999",  # Non-existent bed
         "status": "PLANTED",
-        "season": "SUMMER",
+        "quantity": 1,
+        "space_required": 4,
+        "year": date.today().year,
         "expected_harvest_date": str(date.today()),
         "notes": "Test plant"
     }
@@ -106,7 +110,9 @@ def test_plant_status_transition(client, test_db):
         "planting_date": str(date.today()),
         "location": f"Bed {bed_id}",
         "status": "PLANTED",
-        "season": "SUMMER",
+        "quantity": 1,
+        "space_required": 4,
+        "year": date.today().year,
         "expected_harvest_date": str(date.today()),
         "notes": ""
     })
@@ -121,7 +127,7 @@ def test_plant_status_transition(client, test_db):
     response = client.patch(f"/api/garden/plants/{plant_id}/status", json={"new_status": "FINISHED"})
     assert response.status_code == 400
 
-def test_list_plants_by_season(client, test_db):
+def test_list_plants_by_year(client, test_db):
     # Create bed
     bed_response = client.post("/api/garden/beds", json={
         "name": "Test Bed",
@@ -130,25 +136,27 @@ def test_list_plants_by_season(client, test_db):
     })
     bed_id = bed_response.json()["id"]
     
-    # Create plants for different seasons
-    for season in ["SUMMER", "WINTER"]:
+    # Create plants for different years
+    for year in [2023, 2024]:
         client.post("/api/garden/plants", json={
-            "name": f"{season} Plant",
+            "name": f"Year {year} Plant",
             "variety": "Test",
             "planting_date": str(date.today()),
             "location": f"Bed {bed_id}",
             "status": "PLANTED",
-            "season": season,
+            "quantity": 1,
+            "space_required": 4,
+            "year": year,
             "expected_harvest_date": str(date.today()),
             "notes": ""
         })
     
-    # Test filtering by season
-    response = client.get("/api/garden/plants?season=SUMMER")
+    # Test filtering by year
+    response = client.get("/api/garden/plants?year=2023")
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 1
-    assert data[0]["name"] == "SUMMER Plant"
+    assert data[0]["name"] == "Year 2023 Plant"
 
 def test_get_garden_stats(client, test_db):
     # Create bed
@@ -159,21 +167,23 @@ def test_get_garden_stats(client, test_db):
     })
     bed_id = bed_response.json()["id"]
     
-    # Create plants with different statuses and seasons
+    # Create plants with different statuses
     test_data = [
-        ("SUMMER", "PLANTED"),
-        ("SUMMER", "SPROUTED"),
-        ("WINTER", "PLANTED")
+        ("PLANTED", 2023),
+        ("SPROUTED", 2023),
+        ("PLANTED", 2024)
     ]
     
-    for season, status in test_data:
+    for status, year in test_data:
         client.post("/api/garden/plants", json={
             "name": f"Test Plant",
             "variety": "Test",
             "planting_date": str(date.today()),
             "location": f"Bed {bed_id}",
             "status": status,
-            "season": season,
+            "quantity": 1,
+            "space_required": 4,
+            "year": year,
             "expected_harvest_date": str(date.today()),
             "notes": ""
         })
@@ -185,8 +195,8 @@ def test_get_garden_stats(client, test_db):
     assert data["total_plants"] == 3
     assert data["plants_by_status"]["PLANTED"] == 2
     assert data["plants_by_status"]["SPROUTED"] == 1
-    assert data["plants_by_season"]["SUMMER"] == 2
-    assert data["plants_by_season"]["WINTER"] == 1
+    assert data["plants_by_year"]["2023"] == 2
+    assert data["plants_by_year"]["2024"] == 1
 
 def test_get_bed_stats(client, test_db):
     # Create bed
@@ -205,7 +215,9 @@ def test_get_bed_stats(client, test_db):
             "planting_date": str(date.today()),
             "location": f"Bed {bed_id}",
             "status": "PLANTED",
-            "season": "SUMMER",
+            "quantity": 1,
+            "space_required": 4,
+            "year": date.today().year,
             "expected_harvest_date": str(date.today()),
             "notes": ""
         })
@@ -217,7 +229,6 @@ def test_get_bed_stats(client, test_db):
     assert data["bed_name"] == "Stats Test Bed"
     assert data["total_plants"] == 2
     assert data["plants_by_status"]["PLANTED"] == 2
-    assert data["plants_by_season"]["SUMMER"] == 2
     assert "space_utilization" in data
 
 def test_get_nonexistent_bed_stats(client, test_db):
@@ -241,7 +252,9 @@ def test_plants_by_season_chart(client, test_db):
             "planting_date": str(date.today()),
             "location": f"Bed {bed_id}",
             "status": "PLANTED",
-            "season": season,
+            "quantity": 1,
+            "space_required": 4,
+            "year": date.today().year,
             "expected_harvest_date": str(date.today()),
             "notes": ""
         })
@@ -295,7 +308,9 @@ def test_plant_image_upload(client, test_db):
         "planting_date": str(date.today()),
         "location": f"Bed {bed_id}",
         "status": "PLANTED",
-        "season": "SUMMER",
+        "quantity": 1,
+        "space_required": 4,
+        "year": date.today().year,
         "notes": ""
     })
     plant_id = plant_response.json()["id"]
@@ -350,26 +365,27 @@ def test_malformed_json_handling(client):
     assert "json" in str(data["detail"]).lower()
 
 def test_season_enum_validation(client, test_db):
-    bed_response = client.post("/api/garden/beds", json={
-        "name": "Test Bed",
-        "dimensions": "3x6",
-        "notes": ""
-    })
-    bed_id = bed_response.json()["id"]
+        """Since season was removed, this test should verify that invalid season fields are ignored"""
+        bed_response = client.post("/api/garden/beds", json={
+            "name": "Test Bed",
+            "dimensions": "3x6",
+            "notes": ""
+        })
+        bed_id = bed_response.json()["id"]
     
-    # Test invalid season
-    response = client.post("/api/garden/plants", json={
-        "name": "Test Plant",
-        "variety": "Test",
-        "planting_date": str(date.today()),
-        "location": f"Bed {bed_id}",
-        "status": "PLANTED",
-        "season": "INVALID_SEASON",
-        "notes": ""
-    })
-    assert response.status_code == 422
-    data = response.json()
-    assert "season" in str(data["detail"])
+        # Test invalid season - should be accepted since season is not validated
+        response = client.post("/api/garden/plants", json={
+            "name": "Test Plant",
+            "variety": "Test",
+            "planting_date": str(date.today()),
+            "location": f"Bed {bed_id}",
+            "status": "PLANTED",
+            "season": "INVALID_SEASON",
+            "notes": ""
+        })
+        assert response.status_code == 200  # Changed from 422 since season is not validated
+        data = response.json()
+        assert "id" in data  # Verify plant was created
 
 def test_concurrent_status_updates(client, test_db):
     # Create test bed and plant
