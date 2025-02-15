@@ -30,7 +30,7 @@
     </div>
     <div class="col-md-8">
         <h2>Garden Beds</h2>
-        <div id="garden-beds-list" class="row g-4">
+        <div id="garden-beds-list" class="table-responsive">
             <!-- Garden beds will be loaded here -->
         </div>
     </div>
@@ -49,21 +49,39 @@ function loadGardenBeds() {
         .then(response => response.json())
         .then(beds => {
             const container = document.getElementById('garden-beds-list');
-            container.innerHTML = beds.map(bed => `
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h5 class="card-title">${bed.name}</h5>
-                            <p class="card-text">
-                                <strong>Dimensions:</strong> ${bed.dimensions}<br>
-                                <strong>Plants:</strong> ${bed.plants.length}<br>
-                                ${bed.notes ? `<strong>Notes:</strong> ${bed.notes}` : ''}
-                            </p>
-                            <a href="/ui/garden/beds/${bed.id}" class="btn btn-outline-success">View Details</a>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            if (beds.length === 0) {
+                container.innerHTML = '<p>No garden beds added yet.</p>';
+                return;
+            }
+            
+            container.innerHTML = `
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Dimensions</th>
+                            <th>Plants</th>
+                            <th>Notes</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${beds.map(bed => `
+                            <tr>
+                                <td class="fw-medium">${bed.name}</td>
+                                <td>${bed.dimensions}</td>
+                                <td>${bed.plants.length}</td>
+                                <td class="text-muted small">${bed.notes || '-'}</td>
+                                <td class="text-end">
+                                    <a href="/ui/garden/beds/${bed.id}" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-arrow-right"></i> View Details
+                                    </a>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         });
 }
 

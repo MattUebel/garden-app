@@ -30,6 +30,29 @@ class PlantImage(BaseModel):
     description: Optional[str] = None
     taken_date: datetime
 
+class Harvest(BaseModel):
+    id: Optional[int] = None
+    plant_id: int
+    harvest_date: datetime
+    quantity: float
+    unit: str
+    notes: Optional[str] = None
+
+    @validator('quantity')
+    def validate_quantity(cls, v):
+        if v <= 0:
+            raise ValueError('Quantity must be greater than 0')
+        return v
+
+    @validator('harvest_date', pre=True)
+    def parse_date(cls, value):
+        if isinstance(value, (date, datetime)):
+            return value
+        try:
+            return datetime.fromisoformat(value) if value else None
+        except (TypeError, ValueError):
+            return datetime.strptime(value, '%Y-%m-%d') if value else None
+
 class Plant(BaseModel):
     id: Optional[int] = None
     name: str
@@ -44,6 +67,7 @@ class Plant(BaseModel):
     images: List[PlantImage] = []
     notes: Optional[str] = None
     seed_packet_barcode: Optional[BarcodeData] = None
+    harvests: List[Harvest] = []
 
     @validator('planting_date', 'expected_harvest_date', pre=True)
     def parse_date(cls, value):
@@ -96,6 +120,17 @@ class DBGardenBed(Base):
     notes = sa.Column(sa.String, nullable=True)
     plants = relationship("DBPlant", back_populates="garden_bed")
 
+class DBHarvest(Base):
+    __tablename__ = "harvests"
+    
+    id = sa.Column(sa.Integer, primary_key=True, index=True)
+    plant_id = sa.Column(sa.Integer, sa.ForeignKey("plants.id"))
+    harvest_date = sa.Column(sa.DateTime)
+    quantity = sa.Column(sa.Float)
+    unit = sa.Column(sa.String)
+    notes = sa.Column(sa.String, nullable=True)
+    plant = relationship("DBPlant", back_populates="harvests")
+
 class DBPlant(Base):
     __tablename__ = "plants"
     
@@ -112,6 +147,7 @@ class DBPlant(Base):
     notes = sa.Column(sa.String, nullable=True)
     garden_bed = relationship("DBGardenBed", back_populates="plants")
     images = relationship("DBPlantImage", back_populates="plant")
+    harvests = relationship("DBHarvest", back_populates="plant")
 
 class DBPlantImage(Base):
     __tablename__ = "plant_images"

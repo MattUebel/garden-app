@@ -1,10 +1,10 @@
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from ..database import get_db
-from ..models import Plant, GardenBed, PlantStatus, DBPlant, DBGardenBed, DBPlantImage
+from ..models import Plant, GardenBed, PlantStatus, DBPlant, DBGardenBed, DBPlantImage, Harvest, DBHarvest
 from . import VALID_STATUS_TRANSITIONS
 
 router = APIRouter(prefix="/garden")
@@ -323,3 +323,76 @@ def delete_garden_bed(bed_id: int, db: Session = Depends(get_db)) -> dict:
     db.delete(db_bed)
     db.commit()
     return {"status": "success"}
+
+@router.post("/plants/{plant_id}/harvests", response_model=Harvest)
+def add_harvest(plant_id: int, harvest: Harvest, db: Session = Depends(get_db)) -> Harvest:
+    """Record a new harvest for a plant."""
+    db_plant = db.query(DBPlant).filter(DBPlant.id == plant_id).first()
+    if not db_plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    
+    # Only allow harvests for plants that are in HARVESTING or FLOWERING state
+    current_status = PlantStatus(db_plant.status)
+    if current_status not in [PlantStatus.HARVESTING, PlantStatus.FLOWERING]:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Cannot record harvest for plant in {current_status} status. Plant must be FLOWERING or HARVESTING."
+        )
+    
+    # Auto-transition to HARVESTING status if this is first harvest
+    if current_status == PlantStatus.FLOWERING:
+        db_plant.status = PlantStatus.HARVESTING.value
+    
+    db_harvest = DBHarvest(
+        plant_id=plant_id,
+        harvest_date=harvest.harvest_date,
+        quantity=harvest.quantity,
+        unit=harvest.unit,
+        notes=harvest.notes
+    )
+    db.add(db_harvest)
+    db.commit()
+    db.refresh(db_harvest)
+    
+    return Harvest(
+        id=db_harvest.id,
+        plant_id=db_harvest.plant_id,
+        harvest_date=db_harvest.harvest_date,
+        quantity=db_harvest.quantity,
+        unit=db_harvest.unit,
+        notes=db_harvest.notes
+    )
+
+@router.get("/plants/{plant_id}/harvests", response_model=List[Harvest])
+def list_harvests(plant_id: int, db: Session = Depends(get_db)) -> List[Harvest]:
+    """List all harvests for a plant."""
+    db_plant = db.query(DBPlant).filter(DBPlant.id == plant_id).first()
+    if not db_plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+    
+    return [
+        Harvest(
+            id=h.id,
+            plant_id=h.plant_id,
+            harvest_date=h.harvest_date,
+            quantity=h.quantity,
+            unit=h.unit,
+            notes=h.notes
+        )
+        for h in db_plant.harvests
+    ]
+
+@router.delete("/plants/{plant_id}/harvests/{harvest_id}")
+def delete_harvest(plant_id: int, harvest_id: int, db: Session = Depends(get_db)):
+    """Delete a harvest record."""
+    db_harvest = (
+        db.query(DBHarvest)
+        .filter(DBHarvest.id == harvest_id, DBHarvest.plant_id == plant_id)
+        .first()
+    )
+    if not db_harvest:
+        raise HTTPException(status_code=404, detail="Harvest not found")
+    
+    db.delete(db_harvest)
+    db.commit()
+    return {"message": "Harvest deleted successfully"}
