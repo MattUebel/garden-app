@@ -464,9 +464,14 @@ function updatePlantStatus(plantId, newStatus) {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ new_status: newStatus.toUpperCase() })
+        body: JSON.stringify({ new_status: newStatus })  // The API expects "new_status" to be embedded
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.detail) });
+        }
+        return response.json();
+    })
     .then(() => {
         showNotification('Plant status updated successfully');
         const bedId = parseInt('{{ bed_id }}');
