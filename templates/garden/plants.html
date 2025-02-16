@@ -78,8 +78,23 @@
                 </select>
             </div>
         </div>
-        <div id="plants-list" class="row g-4">
-            <!-- Plants will be loaded here -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Plant</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Details</th>
+                        <th>Space</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="plants-list">
+                    <!-- Plants will be loaded here -->
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -285,80 +300,82 @@ function loadPlants() {
             const container = document.getElementById('plants-list');
             
             if (plants.length === 0) {
-                container.innerHTML = '<p>No plants found for the selected filters.</p>';
+                container.innerHTML = '<tr><td colspan="7" class="text-center">No plants found for the selected filters.</td></tr>';
                 return;
             }
 
             container.innerHTML = plants.map(plant => `
-                <div class="col-md-6">
-                    <div class="card h-100">
+                <tr>
+                    <td>
                         ${plant.images && plant.images.length > 0 ? 
-                            `<img src="${plant.images[0].url}" class="card-img-top plant-image" alt="${plant.name}">` : 
-                            `<div class="card-img-top plant-image-placeholder d-flex align-items-center justify-content-center bg-light">
-                                <i class="bi bi-image text-muted" style="font-size: 2rem;"></i>
+                            `<img src="${plant.images[0].url}" class="plant-thumbnail" alt="${plant.name}">` : 
+                            `<div class="plant-thumbnail-placeholder">
+                                <i class="bi bi-image text-muted"></i>
                             </div>`
                         }
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <h5 class="card-title">${plant.name}</h5>
-                                    ${plant.variety ? `<div class="text-muted mb-2">${plant.variety}</div>` : ''}
-                                    <div class="text-muted">
-                                        ${plant.quantity > 1 ? `${plant.quantity} plants` : '1 plant'} × ${plant.space_required} sq. inches each
-                                    </div>
-                                </div>
-                                <div class="btn-group">
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="editPlant(${JSON.stringify(plant).replace(/"/g, '&quot;')})">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
-                                        <i class="bi bi-camera"></i>
-                                    </button>
-                                    ${plant.status === 'HARVESTING' ? `
-                                        <button class="btn btn-sm btn-outline-success" onclick="showAddHarvestModal(${plant.id})">
-                                            <i class="bi bi-basket"></i>
-                                        </button>
-                                    ` : ''}
-                                    <button class="btn btn-sm btn-outline-info" onclick="showViewHarvestsModal(${plant.id}, '${plant.name}')">
-                                        <i class="bi bi-list-ul"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <p class="card-text mt-3">
-                                <span class="badge status-${plant.status}">
-                                    ${STATUS_EMOJIS[plant.status]} ${plant.status}
-                                </span>
-                                <span class="badge season-badge season-${plant.season}">
-                                    ${SEASON_EMOJIS[plant.season]} ${plant.season}
-                                </span><br>
-                                <strong>Location:</strong> ${plant.location}<br>
-                                <strong>Total Space:</strong> ${plant.quantity * plant.space_required} sq. inches<br>
-                                <strong>Planted:</strong> ${formatDate(plant.planting_date)}<br>
-                                ${plant.expected_harvest_date ? `<strong>Expected Harvest:</strong> ${formatDate(plant.expected_harvest_date)}<br>` : ''}
-                                ${plant.notes ? `<strong>Notes:</strong> ${plant.notes}` : ''}
-                            </p>
-                            <div class="btn-group">
-                                <button class="btn btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                    Update Status
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'SPROUTED')">
-                                        ${STATUS_EMOJIS.SPROUTED} Sprouted
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'FLOWERING')">
-                                        ${STATUS_EMOJIS.FLOWERING} Flowering
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'HARVESTING')">
-                                        ${STATUS_EMOJIS.HARVESTING} Harvesting
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="updatePlantStatus(${plant.id}, 'FINISHED')">
-                                        ${STATUS_EMOJIS.FINISHED} Finished
-                                    </a></li>
-                                </ul>
-                            </div>
+                    </td>
+                    <td>
+                        <div class="fw-medium">${plant.name}</div>
+                        ${plant.variety ? `<div class="text-muted small">${plant.variety}</div>` : ''}
+                    </td>
+                    <td>${plant.location}</td>
+                    <td>
+                        <div class="dropdown">
+                            <button class="btn btn-sm status-badge status-${plant.status.toLowerCase()} dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                ${STATUS_EMOJIS[plant.status]} ${plant.status}
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'SPROUTED')">
+                                    ${STATUS_EMOJIS.SPROUTED} Sprouted
+                                </a></li>
+                                <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FLOWERING')">
+                                    ${STATUS_EMOJIS.FLOWERING} Flowering
+                                </a></li>
+                                <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'HARVESTING')">
+                                    ${STATUS_EMOJIS.HARVESTING} Harvesting
+                                </a></li>
+                                <li><a class="dropdown-item small py-1" href="#" onclick="updatePlantStatus(${plant.id}, 'FINISHED')">
+                                    ${STATUS_EMOJIS.FINISHED} Finished
+                                </a></li>
+                            </ul>
                         </div>
-                    </div>
-                </div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <div>Planted: ${formatDate(plant.planting_date)}</div>
+                            ${plant.expected_harvest_date ? 
+                                `<div>Harvest: ${formatDate(plant.expected_harvest_date)}</div>` : 
+                                ''}
+                            <div>Quantity: ${plant.quantity}</div>
+                            <div>Season: ${SEASON_EMOJIS[plant.season]} ${plant.season}</div>
+                            ${plant.notes ? `<div class="text-muted">${plant.notes}</div>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small">
+                            <div>${plant.space_required} sq.in each</div>
+                            <div class="text-muted">Total: ${plant.quantity * plant.space_required} sq.in</div>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editPlant(${JSON.stringify(plant).replace(/"/g, '&quot;')})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="openPhotoUpload(${plant.id})">
+                                <i class="bi bi-camera"></i>
+                            </button>
+                            ${plant.status === 'HARVESTING' ? `
+                                <button class="btn btn-sm btn-outline-success" onclick="showAddHarvestModal(${plant.id})">
+                                    <i class="bi bi-basket"></i>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-sm btn-outline-info" onclick="showViewHarvestsModal(${plant.id}, '${plant.name}')">
+                                <i class="bi bi-list-ul"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
             `).join('');
         });
 }
@@ -632,4 +649,49 @@ function deleteHarvest(harvestId, plantId) {
     }
 }
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.plant-thumbnail {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+.plant-thumbnail-placeholder {
+    width: 48px;
+    height: 48px;
+    background-color: #f8f9fa;
+    border: 1px dashed #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+.status-badge {
+    min-width: 100px;
+    display: inline-block;
+}
+.status-planted { color: #198754; }
+.status-sprouted { color: #79b752; }
+.status-flowering { color: #ffc107; }
+.status-harvesting { color: #fd7e14; }
+.status-finished { color: #dc3545; }
+
+/* Add hover effect to table rows */
+.table-hover tbody tr:hover {
+    background-color: rgba(25, 135, 84, 0.05);
+}
+
+/* Style for the season badges */
+.season-badge {
+    background-color: #f8f9fa;
+    color: #212529;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.25rem;
+    display: inline-block;
+    margin-top: 0.25rem;
+}
+</style>
 {% endblock %}
