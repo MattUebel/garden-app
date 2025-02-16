@@ -96,12 +96,12 @@
                     <div class="mb-2">
                         <label class="form-label small">Space Required per Plant</label>
                         <select class="form-control form-control-sm" id="space_required" name="space_required" required>
-                            <option value="4">4 sq. inches</option>
-                            <option value="8">8 sq. inches</option>
-                            <option value="12">12 sq. inches</option>
-                            <option value="16">16 sq. inches</option>
-                            <option value="24">24 sq. inches</option>
-                            <option value="36">36 sq. inches</option>
+                            <option value="16">16 sq. inches (4" × 4" small herbs)</option>
+                            <option value="36">36 sq. inches (6" × 6" leafy greens)</option>
+                            <option value="64">64 sq. inches (8" × 8" medium plants)</option>
+                            <option value="144">144 sq. inches (12" × 12" large plants)</option>
+                            <option value="256">256 sq. inches (16" × 16" sprawling plants)</option>
+                            <option value="324">324 sq. inches (18" × 18" very large plants)</option>
                         </select>
                     </div>
                     <div class="mb-2">
@@ -434,8 +434,28 @@ function loadBedStats(bedId) {
         .then(stats => {
             const container = document.getElementById('bed-stats');
             container.innerHTML = `
-                <p><strong>Total Plants (${year}):</strong> ${stats.total_plants}</p>
-                <p><strong>Space Used:</strong> ${stats.total_space_used} sq. inches</p>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Space Utilization (${year})</h6>
+                        <p class="mb-2">
+                            <span class="text-muted" data-bs-toggle="tooltip" title="Bed dimensions in feet, converted to square inches for calculations">
+                                Bed Size: ${stats.dimensions} ft (${parseInt(stats.dimensions.split('x')[0]) * 12 * parseInt(stats.dimensions.split('x')[1]) * 12} sq. in)
+                            </span>
+                        </p>
+                        <p class="mb-2">
+                            <span class="text-muted" data-bs-toggle="tooltip" title="Total space used by all plants">
+                                Space Used: ${stats.total_space_used} sq. in
+                            </span>
+                        </p>
+                        <p class="mb-0">
+                            <span class="text-muted" data-bs-toggle="tooltip" title="Percentage of bed space currently utilized">
+                                Utilization: ${stats.space_utilization}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
+                <p><strong>Space Used:</strong> ${stats.total_space_used} sq. in</p>
                 <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
             `;
 

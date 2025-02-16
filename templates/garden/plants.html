@@ -28,13 +28,14 @@
                     <div class="mb-3">
                         <label for="space_required" class="form-label">Space Required per Plant</label>
                         <select class="form-control" id="space_required" name="space_required" required>
-                            <option value="4">4 sq. inches</option>
-                            <option value="8">8 sq. inches</option>
-                            <option value="12">12 sq. inches</option>
-                            <option value="16">16 sq. inches</option>
-                            <option value="24">24 sq. inches</option>
-                            <option value="36">36 sq. inches</option>
+                            <option value="16">16 sq. in (4" × 4" small herbs)</option>
+                            <option value="36">36 sq. in (6" × 6" leafy greens)</option>
+                            <option value="64">64 sq. in (8" × 8" medium plants)</option>
+                            <option value="144">144 sq. in (12" × 12" large plants)</option>
+                            <option value="256">256 sq. in (16" × 16" sprawling plants)</option>
+                            <option value="324">324 sq. in (18" × 18" very large plants)</option>
                         </select>
+                        <div class="form-text">Select based on mature plant size. Values shown as width × depth.</div>
                     </div>
                     <div class="mb-3">
                         <label for="season" class="form-label">Season</label>
@@ -124,13 +125,14 @@
                     <div class="mb-3">
                         <label for="edit-space-required" class="form-label">Space Required per Plant</label>
                         <select class="form-control" id="edit-space-required" name="space_required" required>
-                            <option value="4">4 sq. inches</option>
-                            <option value="8">8 sq. inches</option>
-                            <option value="12">12 sq. inches</option>
-                            <option value="16">16 sq. inches</option>
-                            <option value="24">24 sq. inches</option>
-                            <option value="36">36 sq. inches</option>
+                            <option value="16">16 sq. in (4" × 4" small herbs)</option>
+                            <option value="36">36 sq. in (6" × 6" leafy greens)</option>
+                            <option value="64">64 sq. in (8" × 8" medium plants)</option>
+                            <option value="144">144 sq. in (12" × 12" large plants)</option>
+                            <option value="256">256 sq. in (16" × 16" sprawling plants)</option>
+                            <option value="324">324 sq. in (18" × 18" very large plants)</option>
                         </select>
+                        <div class="form-text">Select based on mature plant size. Values shown as width × depth.</div>
                     </div>
                     <div class="mb-3">
                         <label for="edit-season" class="form-label">Season</label>
@@ -353,8 +355,8 @@ function loadPlants() {
                     </td>
                     <td>
                         <div class="small">
-                            <div>${plant.space_required} sq.in each</div>
-                            <div class="text-muted">Total: ${plant.quantity * plant.space_required} sq.in</div>
+                            <div>${plant.space_required} sq. in per plant</div>
+                            <div class="text-muted">Total: ${plant.quantity * plant.space_required} sq. in</div>
                         </div>
                     </td>
                     <td class="text-end">

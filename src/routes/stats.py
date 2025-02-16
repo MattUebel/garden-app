@@ -57,7 +57,7 @@ def get_bed_stats(
     
     # Initialize counts
     total_plants = 0
-    total_space_used = 0
+    total_space_used = 0  # in square inches
     plants_by_status = {status.value: 0 for status in PlantStatus}
     plants_by_season = {"SPRING": 0, "SUMMER": 0, "FALL": 0, "WINTER": 0}
     plants_by_year = {}
@@ -76,7 +76,10 @@ def get_bed_stats(
     # Calculate space utilization
     try:
         dimensions = bed.dimensions.split('x')
-        total_bed_space = int(dimensions[0]) * int(dimensions[1])
+        # Convert bed dimensions from feet to square inches
+        width_inches = int(dimensions[0]) * 12  # Convert feet to inches
+        length_inches = int(dimensions[1]) * 12  # Convert feet to inches
+        total_bed_space = width_inches * length_inches  # Total square inches
         space_utilization = f"{(total_space_used / total_bed_space) * 100:.1f}%"
     except (IndexError, ValueError):
         space_utilization = "N/A"
@@ -85,7 +88,7 @@ def get_bed_stats(
         "bed_name": bed.name,
         "dimensions": bed.dimensions,
         "total_plants": total_plants,
-        "total_space_used": total_space_used,
+        "total_space_used": total_space_used,  # Just return the number
         "space_utilization": space_utilization,
         "plants_by_status": plants_by_status,
         "plants_by_season": plants_by_season,
