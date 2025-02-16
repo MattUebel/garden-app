@@ -2,34 +2,143 @@
 
 {% block title %}Garden Statistics{% endblock %}
 
+{% block extra_css %}
+<style>
+.stat-card {
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+.chart-container {
+    min-height: 300px;
+}
+.metric-card {
+    border-left: 4px solid;
+}
+.metric-card.success { border-color: #198754; }
+.metric-card.primary { border-color: #0d6efd; }
+.metric-card.info { border-color: #0dcaf0; }
+.metric-card.warning { border-color: #ffc107; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-12 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h3>Overall Statistics</h3>
-                <div id="overall-stats" class="row">
-                    <!-- Overall stats will be loaded here -->
+<div class="container-fluid py-3">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Garden Statistics</h2>
+                <select class="form-select form-select-sm w-auto" id="year-filter">
+                    <!-- Years will be populated by JavaScript -->
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 metric-card success">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Total Plants</h6>
+                    <h3 id="total-plants">-</h3>
+                    <small class="text-muted" id="plants-trend"></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 metric-card primary">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Active Plants</h6>
+                    <h3 id="active-plants">-</h3>
+                    <small class="text-muted" id="active-percent"></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 metric-card info">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Total Harvests</h6>
+                    <h3 id="total-harvests">-</h3>
+                    <small class="text-muted" id="harvest-trend"></small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 metric-card warning">
+                <div class="card-body">
+                    <h6 class="text-muted mb-1">Space Utilization</h6>
+                    <h3 id="space-util">-</h3>
+                    <small class="text-muted" id="space-trend"></small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-body">
-                <h3>Plants by Status</h3>
-                <div id="status-chart"></div>
+
+    <!-- Charts Row 1 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Plant Lifecycle Distribution</h5>
+                    <div id="status-chart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Harvest Timeline</h5>
+                    <div id="harvest-timeline" class="chart-container"></div>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-12 mt-4">
-        <div class="card">
-            <div class="card-body">
-                <h3>Garden Beds</h3>
-                <div id="garden-beds-stats" class="row">
-                    <!-- Garden bed stats will be loaded here -->
+
+    <!-- Charts Row 2 -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Growth Success Rate</h5>
+                    <div id="success-rate-chart" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Top Producing Plants</h5>
+                    <div id="top-producers" class="chart-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Garden Beds Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Garden Beds Overview</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Bed Name</th>
+                                    <th>Dimensions</th>
+                                    <th>Plants</th>
+                                    <th>Space Used</th>
+                                    <th>Utilization</th>
+                                    <th>Status Distribution</th>
+                                </tr>
+                            </thead>
+                            <tbody id="beds-overview">
+                                <!-- Will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -40,66 +149,149 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    loadOverallStats();
-    loadGardenBedStats();
+    setupYearFilter();
 });
 
-function loadOverallStats() {
-    fetch('/api/stats')
+function setupYearFilter() {
+    const yearSelect = document.getElementById('year-filter');
+    
+    fetch('/api/stats/years')
         .then(response => response.json())
-        .then(stats => {
-            const container = document.getElementById('overall-stats');
-            container.innerHTML = `
-                <div class="col-md-4">
-                    <div class="card bg-light">
-                        <div class="card-body text-center">
-                            <h4>Total Plants</h4>
-                            <h2 class="text-success">${stats.total_plants}</h2>
-                        </div>
-                    </div>
-                </div>
-            `;
+        .then(years => {
+            yearSelect.innerHTML = years.map(year => 
+                `<option value="${year}">${year}</option>`
+            ).join('');
             
-            // Create status chart
-            const statusData = {
-                values: Object.values(stats.plants_by_status),
-                labels: Object.keys(stats.plants_by_status),
-                type: 'pie',
-                name: 'Plant Status'
-            };
+            // Select current year by default
+            const currentYear = new Date().getFullYear();
+            if (years.includes(currentYear)) {
+                yearSelect.value = currentYear;
+            }
             
-            Plotly.newPlot('status-chart', [statusData], {
-                height: 400,
-                showlegend: true
-            });
+            loadAllStats();
+        });
+    
+    yearSelect.addEventListener('change', loadAllStats);
+}
+
+function loadAllStats() {
+    const year = document.getElementById('year-filter').value;
+    
+    // Load all stats components
+    loadKeyMetrics(year);
+    loadStatusChart(year);
+    loadHarvestTimeline(year);
+    loadSuccessRateChart(year);
+    loadTopProducers(year);
+    loadBedsOverview(year);
+}
+
+function loadKeyMetrics(year) {
+    fetch(`/api/stats/metrics?year=${year}`)
+        .then(response => response.json())
+        .then(metrics => {
+            document.getElementById('total-plants').textContent = metrics.total_plants;
+            document.getElementById('plants-trend').textContent = 
+                `${metrics.plants_trend > 0 ? '↑' : '↓'} ${Math.abs(metrics.plants_trend)}% vs prev year`;
+            
+            document.getElementById('active-plants').textContent = metrics.active_plants;
+            document.getElementById('active-percent').textContent = 
+                `${metrics.active_percentage}% of total plants`;
+            
+            document.getElementById('total-harvests').textContent = metrics.total_harvests;
+            document.getElementById('harvest-trend').textContent = 
+                `${metrics.harvest_trend > 0 ? '↑' : '↓'} ${Math.abs(metrics.harvest_trend)}% vs prev year`;
+            
+            document.getElementById('space-util').textContent = metrics.space_utilization;
+            document.getElementById('space-trend').textContent = 
+                `${metrics.space_trend > 0 ? '↑' : '↓'} ${Math.abs(metrics.space_trend)}% vs prev year`;
         });
 }
 
-function loadGardenBedStats() {
+function loadStatusChart(year) {
+    fetch(`/api/stats/charts/status?year=${year}`)
+        .then(response => response.json())
+        .then(chartData => {
+            Plotly.newPlot('status-chart', chartData.data, chartData.layout);
+        });
+}
+
+function loadHarvestTimeline(year) {
+    fetch(`/api/stats/charts/harvests?year=${year}`)
+        .then(response => response.json())
+        .then(chartData => {
+            Plotly.newPlot('harvest-timeline', chartData.data, chartData.layout);
+        });
+}
+
+function loadSuccessRateChart(year) {
+    fetch(`/api/stats/charts/success-rate?year=${year}`)
+        .then(response => response.json())
+        .then(chartData => {
+            Plotly.newPlot('success-rate-chart', chartData.data, chartData.layout);
+        });
+}
+
+function loadTopProducers(year) {
+    fetch(`/api/stats/charts/top-producers?year=${year}`)
+        .then(response => response.json())
+        .then(chartData => {
+            Plotly.newPlot('top-producers', chartData.data, chartData.layout);
+        });
+}
+
+function loadBedsOverview(year) {
     fetch('/api/garden/beds')
         .then(response => response.json())
         .then(beds => {
             const promises = beds.map(bed => 
-                fetch(`/api/stats/beds/${bed.id}`).then(r => r.json())
+                fetch(`/api/stats/beds/${bed.id}?year=${year}`).then(r => r.json())
             );
             
             Promise.all(promises).then(bedStats => {
-                const container = document.getElementById('garden-beds-stats');
-                container.innerHTML = bedStats.map(stats => `
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <div class="card-body">
-                                <h4>${stats.bed_name}</h4>
-                                <p><strong>Dimensions:</strong> ${stats.dimensions}</p>
-                                <p><strong>Total Plants:</strong> ${stats.total_plants}</p>
-                                <p><strong>Space Used:</strong> ${stats.total_space_used} sq. inches</p>
-                                <p><strong>Space Utilization:</strong> ${stats.space_utilization}</p>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
+                const container = document.getElementById('beds-overview');
+                container.innerHTML = bedStats.map(stats => {
+                    const total = Object.values(stats.plants_by_status).reduce((a, b) => a + b, 0);
+                    const statusBars = Object.entries(stats.plants_by_status)
+                        .filter(([_, count]) => count > 0)
+                        .map(([status, count]) => {
+                            const percent = (count / total) * 100;
+                            return `
+                                <div class="bg-${getStatusColor(status)}" 
+                                     style="width: ${percent}%; height: 24px;"
+                                     title="${status}: ${count} plants">
+                                </div>
+                            `;
+                        }).join('');
+                    
+                    return `
+                        <tr>
+                            <td>${stats.bed_name}</td>
+                            <td>${stats.dimensions}</td>
+                            <td>${stats.total_plants}</td>
+                            <td>${stats.total_space_used} sq.in</td>
+                            <td>${stats.space_utilization}</td>
+                            <td>
+                                <div class="d-flex" style="width: 200px;">
+                                    ${statusBars}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             });
         });
+}
+
+function getStatusColor(status) {
+    const colors = {
+        'PLANTED': 'success',
+        'SPROUTED': 'info',
+        'FLOWERING': 'warning',
+        'HARVESTING': 'primary',
+        'FINISHED': 'secondary'
+    };
+    return colors[status] || 'light';
 }
 </script>
 {% endblock %}
